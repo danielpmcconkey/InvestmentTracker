@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "InvestmentTrackerCLI": {
+      "commandName": "Project",
+      "commandLineArgs": "shouldreadinitalcsvdata:false shouldwritejsondata:true shouldreadjsonaccountdata:true shouldreadjsonpricingdata:true shouldcatchuppricingdata:true shouldblendpricingdata:true"
+    }
+  }
+}
