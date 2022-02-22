@@ -11,7 +11,7 @@ using Lib.DataTypes;
 using Lib.Engine;
 using GraphLib;
 using Lib.DataTypes.Simulation;
-using Lib.Engine.MontyCarlo;
+using Lib.Engine.MonteCarlo;
 
 namespace InvestmentTrackerCLI
 {
@@ -257,23 +257,23 @@ namespace InvestmentTrackerCLI
                     //Logger.info(Environment.NewLine + svg.xml + Environment.NewLine);
                     Logger.info("Finished printing net worth");
                 }
-                if (FEATURETOGGLE.SHOULDRUNMONTYCARLO)
+                if (FEATURETOGGLE.SHOULDRUNMONTECARLO)
                 {
-                    Logger.info("Running Monty Carlo simulation");
-                    MontyCarloBatch mcBatch = MontyCarloHelper.RunMontyCarlo(accounts, pricingEngine);
-                    GraphData mcGraphData = MontyCarloHelper.GetMontyCarloGraphData(mcBatch);
-                    GraphPrefs graphPrefs = GetDefaultGraphPrefs("Monty Carlo Simulation Results");
+                    Logger.info("Running Monte Carlo simulation");
+                    MonteCarloBatch mcBatch = MonteCarloHelper.RunMonteCarlo(accounts, pricingEngine);
+                    GraphData mcGraphData = MonteCarloHelper.GetMonteCarloGraphData(mcBatch);
+                    GraphPrefs graphPrefs = GetDefaultGraphPrefs("Monte Carlo Simulation Results");
                     graphPrefs.graphFillHexColor = "F9F5EC";
                     LineChartPrefs lineChartPrefs = GetDefaultLineChartPrefs();
                     //lineChartPrefs.shouldPrintLegend = false;
                     lineChartPrefs.maxY = 10000000M;
-                    MontyCarloLineChart svgMontyCarlo = new MontyCarloLineChart(
+                    MonteCarloLineChart svgMonteCarlo = new MonteCarloLineChart(
                         graphPrefs, lineChartPrefs,
-                        mcGraphData, "MontyCarloGraph");
+                        mcGraphData, "MonteCarloGraph");
                     sbOutput.AppendLine("<div>");
-                    string montyCarloInstructions = @" 
-                    <h1>Monty Carlo Simulation</h1>
-                    <p class='mcanalytics'>A Monty Carlo simulation is a simulation that iterates multiple times, each with different random
+                    string monteCarloInstructions = @" 
+                    <h1>Monte Carlo Simulation</h1>
+                    <p class='mcanalytics'>A Monte Carlo simulation is a simulation that iterates multiple times, each with different random
                     perturbations to assess probability of outcome. In this case, we take the same financial input (the 
                     infomation arrived at in the above graphs) plus certain assumptions, and run them through a mock future</p>
                     <p class='mcanalytics'>The mock future we mean here is that we project forward, into the future, certain market values.
@@ -291,41 +291,41 @@ namespace InvestmentTrackerCLI
                     <p>So what are the assumptions and rules?</p>
                     <ul class='mcanalytics'>
                     ";
-                    montyCarloInstructions += String.Format("<li>Your were born {0}</li>", mcBatch.simParams.birthDate.ToShortDateString());
-                    montyCarloInstructions += String.Format("<li>You plan to retire {0}</li>", mcBatch.simParams.retirementDate.ToShortDateString());
-                    montyCarloInstructions += String.Format("<li>You currently spend {0} per month on 'core' needs and another {1} on your lifestyle</li>", mcBatch.simParams.monthlySpendCoreToday.ToString("c"), mcBatch.simParams.monthlySpendLifeStyleToday.ToString("c"));
-                    montyCarloInstructions += String.Format("<li>You will continue to spend that much every month until you die, which will be at age {0}</li>", mcBatch.simParams.deathAgeOverride.ToString());
-                    montyCarloInstructions += String.Format("<li>However, that spend will go up with inflation, which will be between {0}% and {1}% year over year</li>", (mcBatch.simParams.annualInflationLow * 100).ToString("###.00"), (mcBatch.simParams.annualInflationHi * 100).ToString("###.00"));
-                    montyCarloInstructions += String.Format("<li>Between now and retirement, you'll earn {0} per month at your day job</li>", mcBatch.simParams.monthlyGrossIncomePreRetirement.ToString("c"));
-                    montyCarloInstructions += String.Format("<li>You'll be saving {0} a month in your Roth 401(k)</li>", mcBatch.simParams.monthlyInvestRoth401k.ToString("c"));
-                    montyCarloInstructions += String.Format("<li>You'll be saving {0} a month in your Traditional 401(k)</li>", mcBatch.simParams.monthlyInvestTraditional401k.ToString("c"));
-                    montyCarloInstructions += String.Format("<li>You'll be saving {0} a month in your HSA</li>", mcBatch.simParams.monthlyInvestHSA.ToString("c"));
-                    montyCarloInstructions += String.Format("<li>You'll be saving {0} a month in your taxable brokerage account</li>", mcBatch.simParams.monthlyInvestBrokerage.ToString("c"));
-                    montyCarloInstructions += String.Format("<li>And once a year, you'll be putting your equity bonus (RSU) of {0} (after tax) into your brokerage account</li>", mcBatch.simParams.annualRSUInvestmentPreTax.ToString("c"));
-                    montyCarloInstructions += String.Format("<li>Your regular cash bonus isn't counted because you like to spend it too much</li>", 0);
-                    montyCarloInstructions += String.Format("<li>As you invest, you will target stocks as being N percent with N being {0} - your age</li>", mcBatch.simParams.xMinusAgeStockPercentPreRetirement.ToString());
-                    montyCarloInstructions += String.Format("<li>Once you hit retirement, you'll stop investing and you will move to a bucket strategy, keeping {0} years of your inflation-adjusted lifestyle spend in cash, {1} years in bonds, and the rest in stocks</li>", mcBatch.simParams.numYearsCashBucketInRetirement.ToString("#0.0"), mcBatch.simParams.numYearsBondBucketInRetirement.ToString("#0.0"));
-                    montyCarloInstructions += String.Format("<li>Also at retirement, you'll drop your lifestyle spend to {0}% of what it was while working</li>", (mcBatch.simParams.retirementLifestyleAdjustment * 100).ToString("##.#")); 
-                    montyCarloInstructions += String.Format("<li>After age {0}, you will receive {1} per month in Social Security</li>", mcBatch.simParams.socialSecurityCollectionAge.ToString("##.#"), mcBatch.simParams.monthlyNetSocialSecurityIncome.ToString("c"));
-                    montyCarloInstructions += String.Format("<li>A recession is defined as when the average of the prior {0} months of market values is higher than the next {0} months and also when the market price of the simulation date is <= the market price from one year prior * {1}</li>", ConfigManager.GetInt("numMonthsToEvaluateRecession"), ConfigManager.GetDecimal("recessionPricePercentThreshold").ToString("0.00"));
-                    montyCarloInstructions += String.Format("<li>We're considered still in a recession if the market price at the simulation date is <= the price at the start of the recession * {0}</li>", ConfigManager.GetDecimal("recessionRecoveryPercent"));
-                    montyCarloInstructions += "<li>While we're in a recession, you'll fill your cash bucket entirely from bonds to allow your equity bucket to \"heal\"</li>";
-                    montyCarloInstructions += String.Format("<li>Also while in a recession, you'll party just a little less hard, dropping your lifestyle spend to {0}% of normal times</li>", (mcBatch.simParams.recessionLifestyleAdjustment * 100).ToString("###"));
-                    montyCarloInstructions += "<li>When not in a recession, you'll fill your cash bucket from equities and \"top off\" your bond bucket to desired amounts from equities</li>";
-                    montyCarloInstructions += String.Format("<li>You'll also cool your jets a bit if your total equity balance drops below your retirement balance, dropping your lifestyle spend to {0}% of fat times</li>", (mcBatch.simParams.maxSpendingPercentWhenBelowRetirementLevelEquity * 100).ToString("###"));
-                    montyCarloInstructions += "<li>All along the way, you'll pay taxes based on 2021 tax laws</li>";
+                    monteCarloInstructions += String.Format("<li>Your were born {0}</li>", mcBatch.simParams.birthDate.ToShortDateString());
+                    monteCarloInstructions += String.Format("<li>You plan to retire {0}</li>", mcBatch.simParams.retirementDate.ToShortDateString());
+                    monteCarloInstructions += String.Format("<li>You currently spend {0} per month on 'core' needs and another {1} on your lifestyle</li>", mcBatch.simParams.monthlySpendCoreToday.ToString("c"), mcBatch.simParams.monthlySpendLifeStyleToday.ToString("c"));
+                    monteCarloInstructions += String.Format("<li>You will continue to spend that much every month until you die, which will be at age {0}</li>", mcBatch.simParams.deathAgeOverride.ToString());
+                    monteCarloInstructions += String.Format("<li>However, that spend will go up with inflation, which will be between {0}% and {1}% year over year</li>", (mcBatch.simParams.annualInflationLow * 100).ToString("###.00"), (mcBatch.simParams.annualInflationHi * 100).ToString("###.00"));
+                    monteCarloInstructions += String.Format("<li>Between now and retirement, you'll earn {0} per month at your day job</li>", mcBatch.simParams.monthlyGrossIncomePreRetirement.ToString("c"));
+                    monteCarloInstructions += String.Format("<li>You'll be saving {0} a month in your Roth 401(k)</li>", mcBatch.simParams.monthlyInvestRoth401k.ToString("c"));
+                    monteCarloInstructions += String.Format("<li>You'll be saving {0} a month in your Traditional 401(k)</li>", mcBatch.simParams.monthlyInvestTraditional401k.ToString("c"));
+                    monteCarloInstructions += String.Format("<li>You'll be saving {0} a month in your HSA</li>", mcBatch.simParams.monthlyInvestHSA.ToString("c"));
+                    monteCarloInstructions += String.Format("<li>You'll be saving {0} a month in your taxable brokerage account</li>", mcBatch.simParams.monthlyInvestBrokerage.ToString("c"));
+                    monteCarloInstructions += String.Format("<li>And once a year, you'll be putting your equity bonus (RSU) of {0} (after tax) into your brokerage account</li>", mcBatch.simParams.annualRSUInvestmentPreTax.ToString("c"));
+                    monteCarloInstructions += String.Format("<li>Your regular cash bonus isn't counted because you like to spend it too much</li>", 0);
+                    monteCarloInstructions += String.Format("<li>As you invest, you will target stocks as being N percent with N being {0} - your age</li>", mcBatch.simParams.xMinusAgeStockPercentPreRetirement.ToString());
+                    monteCarloInstructions += String.Format("<li>Once you hit retirement, you'll stop investing and you will move to a bucket strategy, keeping {0} years of your inflation-adjusted lifestyle spend in cash, {1} years in bonds, and the rest in stocks</li>", mcBatch.simParams.numYearsCashBucketInRetirement.ToString("#0.0"), mcBatch.simParams.numYearsBondBucketInRetirement.ToString("#0.0"));
+                    monteCarloInstructions += String.Format("<li>Also at retirement, you'll drop your lifestyle spend to {0}% of what it was while working</li>", (mcBatch.simParams.retirementLifestyleAdjustment * 100).ToString("##.#")); 
+                    monteCarloInstructions += String.Format("<li>After age {0}, you will receive {1} per month in Social Security</li>", mcBatch.simParams.socialSecurityCollectionAge.ToString("##.#"), mcBatch.simParams.monthlyNetSocialSecurityIncome.ToString("c"));
+                    monteCarloInstructions += String.Format("<li>A recession is defined as when the average of the prior {0} months of market values is higher than the next {0} months and also when the market price of the simulation date is <= the market price from one year prior * {1}</li>", ConfigManager.GetInt("numMonthsToEvaluateRecession"), ConfigManager.GetDecimal("recessionPricePercentThreshold").ToString("0.00"));
+                    monteCarloInstructions += String.Format("<li>We're considered still in a recession if the market price at the simulation date is <= the price at the start of the recession * {0}</li>", ConfigManager.GetDecimal("recessionRecoveryPercent"));
+                    monteCarloInstructions += "<li>While we're in a recession, you'll fill your cash bucket entirely from bonds to allow your equity bucket to \"heal\"</li>";
+                    monteCarloInstructions += String.Format("<li>Also while in a recession, you'll party just a little less hard, dropping your lifestyle spend to {0}% of normal times</li>", (mcBatch.simParams.recessionLifestyleAdjustment * 100).ToString("###"));
+                    monteCarloInstructions += "<li>When not in a recession, you'll fill your cash bucket from equities and \"top off\" your bond bucket to desired amounts from equities</li>";
+                    monteCarloInstructions += String.Format("<li>You'll also cool your jets a bit if your total equity balance drops below your retirement balance, dropping your lifestyle spend to {0}% of fat times</li>", (mcBatch.simParams.maxSpendingPercentWhenBelowRetirementLevelEquity * 100).ToString("###"));
+                    monteCarloInstructions += "<li>All along the way, you'll pay taxes based on 2021 tax laws</li>";
                     if(mcBatch.simParams.shouldMoveEquitySurplussToFillBondGapAlways)
                     {
-                        montyCarloInstructions += "<li>If, in retirement, you still have more in equities than you did on retirement day, and your total bonds are less that the bond bucket target, top off your bond bucket from equities</li>";
+                        monteCarloInstructions += "<li>If, in retirement, you still have more in equities than you did on retirement day, and your total bonds are less that the bond bucket target, top off your bond bucket from equities</li>";
 
                     }
-                    sbOutput.AppendLine(montyCarloInstructions);
+                    sbOutput.AppendLine(monteCarloInstructions);
                     sbOutput.AppendLine("</ul>");
-                    sbOutput.AppendLine(svgMontyCarlo.MakeXML());
+                    sbOutput.AppendLine(svgMonteCarlo.MakeXML());
                     sbOutput.AppendLine("<p class='caption'>This chart shows the imaginary net worth by age from multiple simulation runs. Lines that make it to age 95 before reaching zero mean you outlive your money. Lines that hit zero before age 95 means you would have to tighten your belt (or die sooner). Assumptions and detailed results are printed below. </p>");
                     sbOutput.AppendLine("</div>");
                     sbOutput.AppendLine("<div class='mcanalytics'>");
-                    sbOutput.AppendLine("<h3>Monty Carlo Analytics</h3>");
+                    sbOutput.AppendLine("<h3>Monte Carlo Analytics</h3>");
                     sbOutput.AppendLine(string.Format("<p>Average wealth at retirement: {0}</p>", mcBatch.averageWealthAtRetirement.ToString("c")));
                     sbOutput.AppendLine(string.Format("<p>Total runs with bankruptcy: {0}</p>", mcBatch.totalRunsWithBankruptcy.ToString("#,###")));
                     sbOutput.AppendLine(string.Format("<p>Total runs without bankruptcy: {0}</p>", mcBatch.totalRunsWithoutBankruptcy.ToString("#,###")));
@@ -338,7 +338,7 @@ namespace InvestmentTrackerCLI
                     sbOutput.AppendLine(string.Format("<p>Success rate in \"bad\" years: {0}%</p>", (mcBatch.successRateBadYears * 100).ToString("###.00")));
                     sbOutput.AppendLine(string.Format("<p>Success rate in \"good\" years: {0}%</p>", (mcBatch.successRateGoodYears * 100).ToString("###.00")));
                     sbOutput.AppendLine("</div>");
-                    Logger.info("Finished running Monty Carlo simulation");
+                    Logger.info("Finished running Monte Carlo simulation");
                 }
                 WriteHTMLFile(sbOutput, captionWidth);
 

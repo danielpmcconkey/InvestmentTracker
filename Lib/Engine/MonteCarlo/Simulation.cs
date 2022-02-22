@@ -6,7 +6,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Utilities;
 
-namespace Lib.Engine.MontyCarlo
+namespace Lib.Engine.MonteCarlo
 {
     public class Simulation
     {
@@ -929,7 +929,7 @@ namespace Lib.Engine.MontyCarlo
             }
             monthlyInvestBrokerage += Convert.ToInt64(Math.Round(monthlyInvestBrokerage * actualInvestInflation));
             annualRSUInvestmentPreTax += Convert.ToInt64(Math.Round(annualRSUInvestmentPreTax * actualInvestInflation));
-            
+            monthlyNetSocialSecurityIncome += Convert.ToInt64(Math.Round(monthlyNetSocialSecurityIncome * actualInvestInflation));
             // income can follow true inflation
             monthlyGrossIncomePreRetirement += Convert.ToInt64(Math.Round(
                 monthlyGrossIncomePreRetirement * annualInflationPercent));

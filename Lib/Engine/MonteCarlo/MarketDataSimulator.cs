@@ -5,7 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Utilities;
 
-namespace Lib.Engine.MontyCarlo
+namespace Lib.Engine.MonteCarlo
 {
     public class MarketDataSimulator
     {

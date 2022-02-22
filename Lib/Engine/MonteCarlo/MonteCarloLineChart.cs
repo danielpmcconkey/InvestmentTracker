@@ -6,11 +6,11 @@ using System.Threading.Tasks;
 using GraphLib;
 using GraphLib.Utilities;
 
-namespace Lib.Engine.MontyCarlo
+namespace Lib.Engine.MonteCarlo
 {
-    public class MontyCarloLineChart : LineChart
+    public class MonteCarloLineChart : LineChart
     {
-        public MontyCarloLineChart(GraphPrefs graphPrefs, LineChartPrefs lineChartPrefs, 
+        public MonteCarloLineChart(GraphPrefs graphPrefs, LineChartPrefs lineChartPrefs, 
             GraphData graphData, string xmlId) : base(graphPrefs, lineChartPrefs, graphData, xmlId)
         {
             

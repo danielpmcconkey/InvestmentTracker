@@ -11,7 +11,7 @@ using Lib.DataTypes;
 using CsvHelper;
 using System.Globalization;
 using Utilities;
-using Lib.Engine.MontyCarlo;
+using Lib.Engine.MonteCarlo;
 
 namespace Lib
 {
@@ -77,9 +77,9 @@ namespace Lib
             
             return accounts;
         }
-        public static MontyCarloBatch DeserializeMontyCarloBatch(string serializedMontyCarlo)
+        public static MonteCarloBatch DeserializeMonteCarloBatch(string serializedMonteCarlo)
         {
-            return JsonSerializer.Deserialize<MontyCarloBatch>(serializedMontyCarlo);
+            return JsonSerializer.Deserialize<MonteCarloBatch>(serializedMonteCarlo);
         }
         public static List<Valuation> DeSerializePricingData()
         {
@@ -145,7 +145,7 @@ namespace Lib
                 file.Write(pricesJson);
             }
         }
-        public static string SerializeMontyCarloBatch(MontyCarloBatch batch)
+        public static string SerializeMonteCarloBatch(MonteCarloBatch batch)
         {
             return JsonSerializer.Serialize(batch);
         }

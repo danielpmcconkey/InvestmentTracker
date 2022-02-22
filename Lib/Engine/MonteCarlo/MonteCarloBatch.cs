@@ -6,13 +6,13 @@ using System.Text;
 using System.Threading.Tasks;
 using Utilities;
 
-namespace Lib.Engine.MontyCarlo
+namespace Lib.Engine.MonteCarlo
 {
-    public class MontyCarloBatch
+    public class MonteCarloBatch
     {
         public Guid runId { get; set; }
-        public string montyCarloVersion { get { return _montyCarloVersion; } set { } }
-        private const string _montyCarloVersion = "2022.02.22.011";
+        public string monteCarloVersion { get { return _monteCarloVersion; } set { } }
+        private const string _monteCarloVersion = "2022.02.22.011";
         public DateTime runDate { get; set; }
         public SimulationParameters simParams { get; set; }
         public List<SimulationRunResult> simRuns { get; set; }
@@ -40,14 +40,14 @@ namespace Lib.Engine.MontyCarlo
         public decimal successRateGoodYears { get; set; }
 
 
-        public MontyCarloBatch()
+        public MonteCarloBatch()
         {
             // only here for deserialization purposes
         }
-        public MontyCarloBatch(SimulationParameters simParams, List<Asset> assetsGoingIn,
+        public MonteCarloBatch(SimulationParameters simParams, List<Asset> assetsGoingIn,
             int numberOfSimsToRun)
         {
-            //montyCarloVersion = "2021.08.16.009"; 
+            //monteCarloVersion = "2021.08.16.009"; 
             runId = Guid.NewGuid();
             this.simParams = simParams;
             this.assetsGoingIn = assetsGoingIn;
@@ -169,7 +169,7 @@ namespace Lib.Engine.MontyCarlo
         }
         public string serializeSelf()
         {
-            string jsonString = DataSerializationHandler.SerializeMontyCarloBatch(this);
+            string jsonString = DataSerializationHandler.SerializeMonteCarloBatch(this);
             return jsonString;
         }
         private void populateAnalyticsFromRunResults()
@@ -290,9 +290,9 @@ namespace Lib.Engine.MontyCarlo
             using (var conn = PostgresDAL.getConnection())
             {
                 string q = @"
-                    INSERT INTO public.montycarlobatch(
+                    INSERT INTO public.montecarlobatch(
                         runid, 
-                        montycarloversion, 
+                        montecarloversion, 
                         rundate, 
                         serializedself, 
                         numberofsimstorun, 
@@ -320,7 +320,7 @@ namespace Lib.Engine.MontyCarlo
                     )
                     VALUES (
                         @runid, 
-                        @montycarloversion, 
+                        @montecarloversion, 
                         @rundate, 
                         @serializedself, 
                         @numberofsimstorun, 
@@ -351,7 +351,7 @@ namespace Lib.Engine.MontyCarlo
                 using (DbCommand cmd = new DbCommand(q, conn))
                 {
                     cmd.AddParameter(new DbCommandParameter() { ParameterName = "runid", DbType = ParamDbType.Uuid, Value = runId });
-                    cmd.AddParameter(new DbCommandParameter() { ParameterName = "montycarloversion", DbType = ParamDbType.Varchar, Value = montyCarloVersion });
+                    cmd.AddParameter(new DbCommandParameter() { ParameterName = "montecarloversion", DbType = ParamDbType.Varchar, Value = monteCarloVersion });
                     cmd.AddParameter(new DbCommandParameter() { ParameterName = "rundate", DbType = ParamDbType.Timestamp, Value = runDate });
                     cmd.AddParameter(new DbCommandParameter() { ParameterName = "serializedself", DbType = ParamDbType.Text, Value = serializeSelf() });
                     cmd.AddParameter(new DbCommandParameter() { ParameterName = "numberofsimstorun", DbType = ParamDbType.Integer, Value = numberOfSimsToRun });
@@ -418,7 +418,7 @@ namespace Lib.Engine.MontyCarlo
                     int numRowsAffected = PostgresDAL.executeNonQuery(cmd.npgsqlCommand);
                     if (numRowsAffected != 1)
                     {
-                        throw new Exception(string.Format("MontyCarloBatch.writeSelfToDb data insert returned {0} rows. Expected 1.", numRowsAffected));
+                        throw new Exception(string.Format("MonteCarloBatch.writeSelfToDb data insert returned {0} rows. Expected 1.", numRowsAffected));
                     }
                 }
             }
@@ -429,9 +429,9 @@ namespace Lib.Engine.MontyCarlo
             using (var conn = PostgresDAL.getConnection())
             {
                 string q = @"
-                    update public.montycarlobatch
+                    update public.montecarlobatch
                         set  
-                        montycarloversion = @montycarloversion, 
+                        montecarloversion = @montecarloversion, 
                         rundate = @rundate, 
                         serializedself = @serializedself, 
                         numberofsimstorun = @numberofsimstorun, 
@@ -463,7 +463,7 @@ namespace Lib.Engine.MontyCarlo
                 using (var cmd = new DbCommand(q, conn))
                 {
                     cmd.AddParameter(new DbCommandParameter() { ParameterName = "runid", DbType = ParamDbType.Uuid, Value = runId });
-                    cmd.AddParameter(new DbCommandParameter() { ParameterName = "montycarloversion", DbType = ParamDbType.Varchar, Value = montyCarloVersion });
+                    cmd.AddParameter(new DbCommandParameter() { ParameterName = "montecarloversion", DbType = ParamDbType.Varchar, Value = monteCarloVersion });
                     cmd.AddParameter(new DbCommandParameter() { ParameterName = "rundate", DbType = ParamDbType.Timestamp, Value = runDate });
                     cmd.AddParameter(new DbCommandParameter() { ParameterName = "serializedself", DbType = ParamDbType.Text, Value = serializeSelf() });
                     cmd.AddParameter(new DbCommandParameter() { ParameterName = "numberofsimstorun", DbType = ParamDbType.Integer, Value = numberOfSimsToRun });
@@ -530,7 +530,7 @@ namespace Lib.Engine.MontyCarlo
                     int numRowsAffected = PostgresDAL.executeNonQuery(cmd.npgsqlCommand);
                     if (numRowsAffected != 1)
                     {
-                        throw new Exception(string.Format("MontyCarloBatch.writeSelfToDb data insert returned {0} rows. Expected 1.", numRowsAffected));
+                        throw new Exception(string.Format("MonteCarloBatch.writeSelfToDb data insert returned {0} rows. Expected 1.", numRowsAffected));
                     }
                 }
             }
@@ -541,7 +541,7 @@ namespace Lib.Engine.MontyCarlo
             using (var conn = PostgresDAL.getConnection())
             {
                 string q = @"
-                    update public.montycarlobatch
+                    update public.montecarlobatch
                     set
                     monthlyInvestBrokerage = @monthlyInvestBrokerage,
                     xMinusAgeStockPercentPreRetirement = @xMinusAgeStockPercentPreRetirement,
@@ -594,18 +594,18 @@ namespace Lib.Engine.MontyCarlo
                     int numRowsAffected = PostgresDAL.executeNonQuery(cmd.npgsqlCommand);
                     if (numRowsAffected != 1)
                     {
-                        throw new Exception(string.Format("MontyCarloBatch.updateParamsInDb data update returned {0} rows. Expected 1.", numRowsAffected));
+                        throw new Exception(string.Format("MonteCarloBatch.updateParamsInDb data update returned {0} rows. Expected 1.", numRowsAffected));
                     }
                 }
             }
 
         }
-        public static MontyCarloBatch readAndDeserializeFromDb(Guid runId)
+        public static MonteCarloBatch readAndDeserializeFromDb(Guid runId)
         {
             using (var conn = PostgresDAL.getConnection())
             {
                 string query = @"
-                    select serializedself from public.MontyCarloBatch where runid = @runId
+                    select serializedself from public.MonteCarloBatch where runid = @runId
 					;";
                 PostgresDAL.openConnection(conn);
                 using (DbCommand cmd = new DbCommand(query, conn))
@@ -618,10 +618,10 @@ namespace Lib.Engine.MontyCarlo
                     }
                     );
                     object result = PostgresDAL.executeScalar(cmd.npgsqlCommand);
-                    string serializedMontyCarlo = Convert.ToString(result);
+                    string serializedMonteCarlo = Convert.ToString(result);
 
                     
-                    return DataSerializationHandler.DeserializeMontyCarloBatch(serializedMontyCarlo);
+                    return DataSerializationHandler.DeserializeMonteCarloBatch(serializedMonteCarlo);
                 }
             }
         }
@@ -635,9 +635,9 @@ namespace Lib.Engine.MontyCarlo
                     select 
 	                    runid,
 	                    (numberofsimstorun - totalrunswithbankruptcy) / cast(numberofsimstorun as numeric(6,0)) as successRate
-                    from public.MontyCarloBatch 
+                    from public.MonteCarloBatch 
                     where 1=1
-                    and montyCarloVersion = @mcVersion
+                    and monteCarloVersion = @mcVersion
                     and numberofsimstorun < @Y
                     order by 
 	                    successRate desc
@@ -650,7 +650,7 @@ namespace Lib.Engine.MontyCarlo
                     {
                         ParameterName = "mcVersion",
                         DbType = ParamDbType.Varchar,
-                        Value = _montyCarloVersion
+                        Value = _monteCarloVersion
                     }
                     );
                     cmd.AddParameter(new DbCommandParameter()

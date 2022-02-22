@@ -9,20 +9,20 @@ using System.Text;
 using System.Threading.Tasks;
 using Utilities;
 
-namespace Lib.Engine.MontyCarlo
+namespace Lib.Engine.MonteCarlo
 {
-    public static class MontyCarloHelper
+    public static class MonteCarloHelper
     {
-        public static GraphData GetMontyCarloGraphData(MontyCarloBatch montyCarloBatch)
+        public static GraphData GetMonteCarloGraphData(MonteCarloBatch monteCarloBatch)
         {
             GraphData graphData = new GraphData(
                 TypeHelper.int32Type,
                 TypeHelper.int64Type);
 
 
-            for (int i = 0; i < montyCarloBatch.simRuns.Count; i++)
+            for (int i = 0; i < monteCarloBatch.simRuns.Count; i++)
             {
-                SimulationRunResult r = montyCarloBatch.simRuns[i];
+                SimulationRunResult r = monteCarloBatch.simRuns[i];
                 GraphSeries graphSeries = new GraphSeries();
                 graphSeries.yType = TypeHelper.int64Type;
                 graphSeries.xType = TypeHelper.int32Type;
@@ -38,7 +38,7 @@ namespace Lib.Engine.MontyCarlo
                     if (n.dateWithinSim <= r.deathdate)
                     {
                         int age = (int)Math.Round(
-                            (n.dateWithinSim - montyCarloBatch.simParams.birthDate).TotalDays / 365.25, 0);
+                            (n.dateWithinSim - monteCarloBatch.simParams.birthDate).TotalDays / 365.25, 0);
                         long dollarAmount = Convert.ToInt64(Math.Round(
                             n.totalNetWorth / 10000f
                             , 2));
@@ -47,17 +47,17 @@ namespace Lib.Engine.MontyCarlo
                 }
                 graphData.AddSeries(graphSeries);
             }
-            graphData.AddSeries(GetMedianFromSimResults(montyCarloBatch.simRuns, 
-                montyCarloBatch.simParams.birthDate));
+            graphData.AddSeries(GetMedianFromSimResults(monteCarloBatch.simRuns, 
+                monteCarloBatch.simParams.birthDate));
 
-            var nintiethPercentiles = Get90PercentFromSimResults(montyCarloBatch.simRuns,
-                montyCarloBatch.simParams.birthDate);
+            var nintiethPercentiles = Get90PercentFromSimResults(monteCarloBatch.simRuns,
+                monteCarloBatch.simParams.birthDate);
             graphData.AddSeries(nintiethPercentiles.Item1);
             graphData.AddSeries(nintiethPercentiles.Item2);
 
             return graphData;
         }
-        public static MontyCarloBatch RunMontyCarlo(List<Account> accounts, PricingEngine pricingEngine)
+        public static MonteCarloBatch RunMonteCarlo(List<Account> accounts, PricingEngine pricingEngine)
         {
             SimulationParameters simParams = new SimulationParameters()
             {
@@ -161,7 +161,7 @@ namespace Lib.Engine.MontyCarlo
             }
             
             int numberOfSimsToRun = ConfigManager.GetInt("numberOfSimsToRun");
-            MontyCarloBatch mc = new MontyCarloBatch(simParams, assetsGoingIn, numberOfSimsToRun);
+            MonteCarloBatch mc = new MonteCarloBatch(simParams, assetsGoingIn, numberOfSimsToRun);
             mc.runBatch();
             return mc;
         }
