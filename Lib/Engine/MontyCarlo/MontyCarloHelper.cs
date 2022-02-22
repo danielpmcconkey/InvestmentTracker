@@ -67,13 +67,14 @@ namespace Lib.Engine.MontyCarlo
                 monthlyGrossIncomePreRetirement = ConfigManager.GetDecimal("AnnualIncome") / 12.0m,
                 monthlyNetSocialSecurityIncome = ConfigManager.GetDecimal("monthlyNetSocialSecurityIncome"),
                 monthlySpendLifeStyleToday = ConfigManager.GetDecimal("monthlySpendLifeStyleToday"),
+                monthlySpendCoreToday = ConfigManager.GetDecimal("monthlySpendCoreToday"),
                 monthlyInvestRoth401k = ConfigManager.GetDecimal("monthlyInvestRoth401k"),
                 monthlyInvestTraditional401k = ConfigManager.GetDecimal("monthlyInvestTraditional401k"),
                 monthlyInvestBrokerage = ConfigManager.GetDecimal("monthlyInvestBrokerage"),
                 monthlyInvestHSA = ConfigManager.GetDecimal("monthlyInvestHSA"),
-                annualRSUInvestment = ConfigManager.GetDecimal("annualRSUInvestment"),
-                minBondPercentPreRetirement = ConfigManager.GetDecimal("minBondPercentPreRetirement"),
-                maxBondPercentPreRetirement = ConfigManager.GetDecimal("maxBondPercentPreRetirement"),
+                annualRSUInvestmentPreTax = ConfigManager.GetDecimal("annualRSUInvestmentPreTax"),
+                //minBondPercentPreRetirement = ConfigManager.GetDecimal("minBondPercentPreRetirement"),
+                //maxBondPercentPreRetirement = ConfigManager.GetDecimal("maxBondPercentPreRetirement"),
                 xMinusAgeStockPercentPreRetirement = ConfigManager.GetDecimal("xMinusAgeStockPercentPreRetirement"),
                 numYearsCashBucketInRetirement = ConfigManager.GetDecimal("numYearsCashBucketInRetirement"),
                 numYearsBondBucketInRetirement = ConfigManager.GetDecimal("numYearsBondBucketInRetirement"),
@@ -81,7 +82,11 @@ namespace Lib.Engine.MontyCarlo
                 shouldMoveEquitySurplussToFillBondGapAlways = ConfigManager.GetBool("shouldMoveEquitySurplussToFillBondGapAlways"),
                 deathAgeOverride = ConfigManager.GetInt("deathAgeOverride"),
                 recessionLifestyleAdjustment = ConfigManager.GetDecimal("recessionLifestyleAdjustment"),
+                retirementLifestyleAdjustment = ConfigManager.GetDecimal("retirementLifestyleAdjustment"),
                 maxSpendingPercentWhenBelowRetirementLevelEquity = ConfigManager.GetDecimal("maxSpendingPercentWhenBelowRetirementLevelEquity"),
+                annualInflationLow = ConfigManager.GetDecimal("annualInflationLow"),
+                annualInflationHi = ConfigManager.GetDecimal("annualInflationHi"),
+                socialSecurityCollectionAge = ConfigManager.GetDecimal("socialSecurityCollectionAge"),
             };
             List<Asset> assetsGoingIn = new List<Asset>();
 
@@ -105,7 +110,7 @@ namespace Lib.Engine.MontyCarlo
                     decimal numShares = allPurchases.Sum(y => y.Quantity);
                     numShares -= allSales.Sum(y => y.Quantity);
                     decimal pricePerShare = pricingEngine.GetPriceAtDate(tGroup.vehicle, today).Price;
-                    a.amountCurrent = (long)(Math.Round(pricePerShare * numShares, 0));
+                    a.amountCurrent = (long)(Math.Round(pricePerShare * numShares * 10000, 0));
                     // RMD dates
                     DateTime birthDayAt72 = ConfigManager.GetDateTime("BirthDate").AddYears(72);
                     a.rmdDate = null;
@@ -115,8 +120,8 @@ namespace Lib.Engine.MontyCarlo
                     if (account.AccountType == AccountType.TRADITIONAL_401_K) a.rmdDate = birthDayAt72;
 
                     a.amountContributed = (long)(Math.Round(
-                        allPurchases.Sum(x => x.CashPriceTotalTransaction) -
-                        allSales.Sum(x => x.CashPriceTotalTransaction), 0)
+                        (allPurchases.Sum(x => x.CashPriceTotalTransaction) -
+                        allSales.Sum(x => x.CashPriceTotalTransaction)) * 10000, 0)
                         );
 
                     // tax buckets are:
@@ -144,23 +149,19 @@ namespace Lib.Engine.MontyCarlo
                     if (tGroup.vehicle.Type == InvestmentVehicleType.PUBLICLY_TRADED)
                     {
                         a.investmentIndex = InvestmentIndex.EQUITY;
+                        assetsGoingIn.Add(a);
+
                     }
-                    if (tGroup.vehicle.Type == InvestmentVehicleType.PRIVATELY_HELD)
-                    {
-                        a.investmentIndex = InvestmentIndex.NONE;
-                    }
-                    assetsGoingIn.Add(a);
+                    //if (tGroup.vehicle.Type == InvestmentVehicleType.PRIVATELY_HELD)
+                    //{
+                    //    a.investmentIndex = InvestmentIndex.NONE;
+                    //}
+                    
                 }
             }
-            SimulationFeatureToggles featureToggles = new SimulationFeatureToggles()
-            {
-                shouldLog = false,
-                shouldWriteResultsToDB = false,
-                shouldRunInParallel = true,
-            };
+            
             int numberOfSimsToRun = ConfigManager.GetInt("numberOfSimsToRun");
-            MontyCarloBatch mc = new MontyCarloBatch(simParams, assetsGoingIn,
-                featureToggles, numberOfSimsToRun);
+            MontyCarloBatch mc = new MontyCarloBatch(simParams, assetsGoingIn, numberOfSimsToRun);
             mc.runBatch();
             return mc;
         }

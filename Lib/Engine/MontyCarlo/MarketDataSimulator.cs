@@ -14,18 +14,22 @@ namespace Lib.Engine.MontyCarlo
         private Dictionary<DateTime, (decimal price, decimal movement)> simulatedBondData;
         private DateTime start;
         private DateTime end;
-        public List<DateTime> recessions;
+        public List<(DateTime start, DateTime end)> recessions;
         const decimal marketHistoryStartValue = 10000;
         const decimal bondMonthVolatilityLow = -0.01m / 12;
         const decimal bondMonthVolatilityHigh = 0.04m / 12;
-        const int numMonthsToEvaluateRecession = 3;
-        const decimal recessionPricePercentThreshold = 0.9m; // if the equities price is lower than last year times this value, you're in a recession
-        const decimal recessionRecoveryPercent = 1.05m; // if today's price is >= this value * the price at last recessions start, recession is over
+        private int numMonthsToEvaluateRecession = 3;
+        private decimal recessionPricePercentThreshold = 0.9m; // if the equities price is lower than last year times this value, you're in a recession
+        private decimal recessionRecoveryPercent = 1.05m; // if today's price is >= this value * the price at last recessions start, recession is over
+        public DateTime retirementDateHistoricalAnalog;
 
         public MarketDataSimulator(DateTime start, DateTime end)
         {
             this.start = start;
             this.end = end;
+            numMonthsToEvaluateRecession = ConfigManager.GetInt("numMonthsToEvaluateRecession");
+            recessionRecoveryPercent = ConfigManager.GetDecimal("recessionRecoveryPercent");
+            recessionPricePercentThreshold = ConfigManager.GetDecimal("recessionPricePercentThreshold");
         }
         public void createMarketHistory()
         {
@@ -60,6 +64,11 @@ namespace Lib.Engine.MontyCarlo
             DateTime pointer = start;
             //DateTime pointerToHistoryData = actualHistoryData[offset].period;
             decimal priorValue = marketHistoryStartValue;
+            
+            var roundedRetirement = DateTimeHelper.RoundToMonth(
+                ConfigManager.GetDateTime("RetirementDate"), RoundDateDirection.CLOSEST)
+                .Date;
+            
             while (pointer <= end)
             {
                 offset = (actualHistoryData.Count > offset) ? offset : 0;
@@ -67,6 +76,14 @@ namespace Lib.Engine.MontyCarlo
                 decimal newValue = priorValue + (movement * priorValue);
                 priorValue = newValue;
                 simulatedEquityData.Add(pointer, (newValue, movement));
+                
+                // figure out when our retirement date analog is
+                if (pointer == roundedRetirement) retirementDateHistoricalAnalog = actualHistoryData[offset].period;
+                if(retirementDateHistoricalAnalog.Year > 2022)
+                {
+                    string burp = "true";
+                }
+                // and move everything forward by 1
                 pointer = pointer.AddMonths(1);
                 offset++;
             }
@@ -86,6 +103,14 @@ namespace Lib.Engine.MontyCarlo
         public decimal getPriceAtDateEquity(DateTime period)
         {
             return simulatedEquityData[period].price;
+        }
+        public bool isInRecession(DateTime period)
+        {
+            if (recessions.Where(x => x.start <= period && x.end >= period).Count() > 0)
+            {
+                return true;
+            }
+            return false;
         }
         private void populateActualHistory()
         {
@@ -1221,26 +1246,37 @@ namespace Lib.Engine.MontyCarlo
         }
         private void populateRecessionsList()
         {
-            recessions = new List<DateTime>();
+            // definition of recession https://www.investopedia.com/terms/r/recession.asp
+            // hint: it varies
+            // definition used here average stock price of the prior
+            // 3 months is higher than average stock price of next
+            // 3 months and a year-over-year decline of 10% or more 
+            recessions = new List<(DateTime start, DateTime end)>();
+
+            DateTime currentOpenRecessionStart = DateTime.MinValue;
+            
+
             decimal priceAtStartOfLastRecession = 0m;
             DateTime pointer = start.AddMonths(numMonthsToEvaluateRecession);
             DateTime endLoop = end.AddMonths(numMonthsToEvaluateRecession * -1);
-            bool isInRecession = false;
+            bool isAlreadyInRecession = false;
             while (pointer <= endLoop)
             {
                 decimal priceAtPointer = getPriceAtDateEquity(pointer);
                 DateTime checkPeriodEndDate = pointer.AddMonths(numMonthsToEvaluateRecession);
-                if (isInRecession)
+                if (isAlreadyInRecession)
                 {
                     // already in one, see if we've gotten out of it
                     if (priceAtPointer >= priceAtStartOfLastRecession * recessionRecoveryPercent)
                     {
-                        isInRecession = false;
+                        isAlreadyInRecession = false;
+                        recessions.Add((currentOpenRecessionStart, checkPeriodEndDate));
                     }
 
                 }
                 else
                 {
+                    // market average prior three months 
                     decimal marketAvgPriorTime = simulatedEquityData
                         .Where(x => x.Key <= pointer && x.Key > pointer.AddMonths(numMonthsToEvaluateRecession * -1))
                         .Average(y => y.Value.price);
@@ -1248,6 +1284,7 @@ namespace Lib.Engine.MontyCarlo
 
                     try
                     {
+                        // market average next three months
                         marketAvgAfterTime = simulatedEquityData
                                         .Where(x => x.Key > pointer && x.Key <= checkPeriodEndDate)
                                         .Average(y => y.Value.price);
@@ -1283,14 +1320,16 @@ namespace Lib.Engine.MontyCarlo
                         if (priceAtEndOfCheckPeriod <= priceLastYear * recessionPricePercentThreshold)
                         {
                             // we're in recession
-                            isInRecession = true;
-                            recessions.Add(pointer);
+                            isAlreadyInRecession = true;
+                            currentOpenRecessionStart = pointer;
                             priceAtStartOfLastRecession = (priceAtPointer >= priceLastYear) ? priceAtPointer : priceLastYear;
                         }
                     }
                 }
                 pointer = pointer.AddMonths(numMonthsToEvaluateRecession);
             }
+
+            if(isAlreadyInRecession) recessions.Add((currentOpenRecessionStart, endLoop));
         }
     }
 }

@@ -9,45 +9,46 @@ namespace Utilities
     public static class FEATURETOGGLE
     {
         /* miscellaneous features */
-        public static bool NO_WRITE = false; // should be false in a normal run
+        public static bool NO_WRITE = true; // should be false in a normal run
         public static bool MULTITHREAD = true;
+        public static bool SHOULDDEBUGSIMLOGIC = false;
 
         /// <summary>
         /// pull account and transactions from CSV. Should only need this first time you run it. Subsequent runs should pull from JSON files
         /// </summary>
-        public static bool _shouldReadInitalCSVData = false;
+        public static bool SHOULDREADINITALCSVDATA = false;
 
         /// <summary>
         /// whether to update the JSON files with teh result of the run. Should be true every run unless you're doing something interesting
         /// </summary>
-        public static bool _shouldWriteJSONData = true;
+        public static bool SHOULDWRITEJSONDATA = true;
 
         /// <summary>
         /// whether to pull accounts from JSON files. Should be true every run unless you're doing something interesting
         /// </summary>
-        public static bool _shouldReadJSONAccountData = true;
+        public static bool SHOULDREADJSONACCOUNTDATA = true;
 
         /// <summary>
         /// whether to pull prices from JSON files. Should be true every run unless you're doing something interesting
         /// </summary>
-        public static bool _shouldReadJSONPricingData = true;
+        public static bool SHOULDREADJSONPRICINGDATA = true;
 
         /// <summary>
         /// check if we have prices from first needed transaction date to present and, if not, scrape them from Yahoo
         /// </summary>
-        public static bool _shouldCatchUpPricingData = true;
+        public static bool SHOULDCATCHUPPRICINGDATA = true;
 
         /// <summary>
         /// whether to fill in the gaps between prices with trend data. Yahoo only pulls monthly prices. This will fill in daily prices based on the slope between months
         /// </summary>
-        public static bool _shouldBlendPricingData = true;
+        public static bool SHOULDBLENDPRICINGDATA = true;
 
         /// <summary>
         /// whether to print a graph of net worth to the logs
         /// </summary>
-        public static bool _shouldPrintNetWorth = true;
+        public static bool SHOULDPRINTNETWORTH = true;
 
-        public static bool shouldRunMontyCarlo = true;
+        public static bool SHOULDRUNMONTYCARLO = true;
 
         /* command line args for default
          * shouldreadinitalcsvdata:false shouldwritejsondata:true shouldreadjsonaccountdata:true shouldreadjsonpricingdata:true shouldcatchuppricingdata:true shouldblendpricingdataa:true

@@ -17,13 +17,14 @@ namespace Lib.DataTypes.Simulation
         public decimal monthlyGrossIncomePreRetirement { get; set; }
         public decimal monthlyNetSocialSecurityIncome { get; set; }
         public decimal monthlySpendLifeStyleToday { get; set; }
+        public decimal monthlySpendCoreToday { get; set; }
         public decimal monthlyInvestRoth401k { get; set; }
         public decimal monthlyInvestTraditional401k { get; set; }
         public decimal monthlyInvestBrokerage { get; set; }
         public decimal monthlyInvestHSA { get; set; }
-        public decimal annualRSUInvestment { get; set; }
-        public decimal minBondPercentPreRetirement { get; set; }
-        public decimal maxBondPercentPreRetirement { get; set; }
+        public decimal annualRSUInvestmentPreTax { get; set; }
+        //public decimal minBondPercentPreRetirement { get; set; }
+        //public decimal maxBondPercentPreRetirement { get; set; }
         public decimal xMinusAgeStockPercentPreRetirement { get; set; }
         public decimal numYearsCashBucketInRetirement { get; set; }
         public decimal numYearsBondBucketInRetirement { get; set; }
@@ -31,8 +32,11 @@ namespace Lib.DataTypes.Simulation
         public bool shouldMoveEquitySurplussToFillBondGapAlways { get; set; }
         public int deathAgeOverride { get; set; }
         public decimal recessionLifestyleAdjustment { get; set; } // when there's been a recession, spend this percent of normal monthly spend
+        public decimal retirementLifestyleAdjustment { get; set; } // come retirement day, permanently drop your lifestyle spend this much
         public decimal maxSpendingPercentWhenBelowRetirementLevelEquity { get; set; }
-
+        public decimal annualInflationLow { get; set; }// = 0.01m;
+        public decimal annualInflationHi { get; set; }// = 0.075m;
+        public decimal socialSecurityCollectionAge { get; set; }
 
 
     }

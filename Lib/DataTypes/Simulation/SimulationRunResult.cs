@@ -15,10 +15,11 @@ namespace Lib.DataTypes.Simulation
         public DateTime deathdate { get; set; }
         public DateTime? bankruptcydate { get; set; }
         public decimal? ageAtBankruptcy { get; set; }
-        //public int numberofrecessions { get; set; }
+        public int numberofrecessions { get; set; }
         public decimal wealthAtRetirement { get; set; }
         public decimal wealthAtDeath { get; set; }
         public List<NetWorth> netWorthSchedule { get; set; }
+        public DateTime retirementDateHistoricalAnalog { get; set; }
 
         private void logNetWorthSchedule()
         {

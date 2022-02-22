@@ -12,7 +12,7 @@ namespace Lib.Engine.MontyCarlo
     {
         public Guid runId { get; set; }
         public string montyCarloVersion { get { return _montyCarloVersion; } set { } }
-        private const string _montyCarloVersion = "2021.08.16.009";
+        private const string _montyCarloVersion = "2022.02.22.011";
         public DateTime runDate { get; set; }
         public SimulationParameters simParams { get; set; }
         public List<SimulationRunResult> simRuns { get; set; }
@@ -28,28 +28,29 @@ namespace Lib.Engine.MontyCarlo
         public decimal bankruptcyAge95Percent { get; set; }
         public decimal bankruptcyAge99Percent { get; set; }
         public decimal maxAgeAtBankruptcy { get; set; }
-        //public decimal averageNumberOfRecessionsInBankruptcyRuns { get; set; }
-        //public decimal averageNumberOfRecessionsInNonBankruptcyRuns { get; set; }
+        public decimal averageNumberOfRecessionsInBankruptcyRuns { get; set; }
+        public decimal averageNumberOfRecessionsInNonBankruptcyRuns { get; set; }
         public decimal averageWealthAtRetirement { get; set; }
         public decimal averageWealthAtDeath { get; set; }
         public decimal wealthAtDeath90Percent { get; set; }   // best wealth at death for the worst 10% of success runs
         public decimal wealthAtDeath95Percent { get; set; }   // best wealth at death for the worst 5% of success runs
+        //public Dictionary<int, int> bankruptcyCountsByRetirementAnalogYear { get; set; }
+        //public Dictionary<int, int> successCountsByRetirementAnalogYear { get; set; }
+        public decimal successRateBadYears { get; set; }
+        public decimal successRateGoodYears { get; set; }
 
-        // feature toggles
-        SimulationFeatureToggles featureToggles;
 
         public MontyCarloBatch()
         {
             // only here for deserialization purposes
         }
         public MontyCarloBatch(SimulationParameters simParams, List<Asset> assetsGoingIn,
-            SimulationFeatureToggles featureToggles, int numberOfSimsToRun)
+            int numberOfSimsToRun)
         {
             //montyCarloVersion = "2021.08.16.009"; 
             runId = Guid.NewGuid();
             this.simParams = simParams;
             this.assetsGoingIn = assetsGoingIn;
-            this.featureToggles = featureToggles;
             this.numberOfSimsToRun = numberOfSimsToRun;
         }
         public void extendRun(int newCount)
@@ -70,7 +71,7 @@ namespace Lib.Engine.MontyCarlo
                 {
                     Simulation sim = new Simulation();
 
-                    sim.init(simParams, assetsGoingIn, featureToggles);
+                    sim.init(simParams, assetsGoingIn);
                     SimulationRunResult simResult = sim.run();
                     try
                     {
@@ -102,7 +103,7 @@ namespace Lib.Engine.MontyCarlo
 
             simRuns = new List<SimulationRunResult>();
 
-            if (featureToggles.shouldRunInParallel)
+            if (FEATURETOGGLE.MULTITHREAD)
             {
                 // first add blank SimulationRunResults so we can update each my index
                 for (int i2 = 0; i2 < numberOfSimsToRun; i2++)
@@ -116,7 +117,7 @@ namespace Lib.Engine.MontyCarlo
                     {
                         Simulation sim = new Simulation();
 
-                        sim.init(simParams, assetsGoingIn, featureToggles);
+                        sim.init(simParams, assetsGoingIn);
                         SimulationRunResult simResult = sim.run();
                         try
                         {
@@ -143,7 +144,7 @@ namespace Lib.Engine.MontyCarlo
                     {
                         Simulation sim = new Simulation();
 
-                        sim.init(simParams, assetsGoingIn, featureToggles);
+                        sim.init(simParams, assetsGoingIn);
                         SimulationRunResult simResult = sim.run();
                         simRuns.Add(simResult);
                     }
@@ -158,7 +159,7 @@ namespace Lib.Engine.MontyCarlo
 
             populateAnalyticsFromRunResults();
 
-            if (featureToggles.shouldWriteResultsToDB)
+            if (FEATURETOGGLE.NO_WRITE == false)
             {
                 writeSelfToDb();
             }
@@ -177,13 +178,16 @@ namespace Lib.Engine.MontyCarlo
             totalRunsWithBankruptcy = bankruptcyRuns.Count();
             var successfulRuns = simRuns.Where(x => x.wasSuccessful == true);
             totalRunsWithoutBankruptcy = successfulRuns.Count();
+
+            //bankruptcyCountsByRetirementAnalogYear = new Dictionary<int, int>();
+
             if (totalRunsWithBankruptcy > 0)
             {
                 averageAgeAtBankruptcy = (decimal)bankruptcyRuns.Average(x => x.ageAtBankruptcy);
                 minAgeAtBankruptcy = (decimal)bankruptcyRuns.Min(x => x.ageAtBankruptcy);
                 maxAgeAtBankruptcy = (decimal)bankruptcyRuns.Max(x => x.ageAtBankruptcy);
                 
-                //averageNumberOfRecessionsInBankruptcyRuns = (decimal)bankruptcyRuns.Average(x => x.numberofrecessions);
+                averageNumberOfRecessionsInBankruptcyRuns = (decimal)bankruptcyRuns.Average(x => x.numberofrecessions);
 
                 List<SimulationRunResult> bankruptcies90Percent = getWorstNPerecentRuns(90);
                 List<SimulationRunResult> bankruptcies95Percent = getWorstNPerecentRuns(95);
@@ -202,27 +206,47 @@ namespace Lib.Engine.MontyCarlo
                     : successes90Percent.Max(x => x.wealthAtDeath);
                 wealthAtDeath95Percent = (successes95Percent.Count < 1) ? -10.0m
                     : successes95Percent.Max(x => x.wealthAtDeath);
+
+                /* get stats for the worst years to retire
+                 * according to a run of 50,000 with fairly 
+                 * vanilla settings, the worst years to retire
+                 * were 1928 - 1938, 1974-1975, 2013-2020
+                 */
+                int[] badYears = new int[] { 1928, 1929, 1930, 1931, 1932, 1933, 1934, 1935, 1936, 1937, 1938, 1939, 1974, 1975, 2013, 2014, 2015, 2016, 2017, 2018, 2019, 2020 };
+                var badYearRuns = simRuns.Where(x => 
+                    badYears.Contains(x.retirementDateHistoricalAnalog.Year));
+                var goodYearRuns = simRuns.Where(x => 
+                    (badYears.Contains(x.retirementDateHistoricalAnalog.Year)) == false);
+                var badYearBankruptcies = badYearRuns.Where(x => x.wasSuccessful == false).Count();
+                var badYearSuccesses = badYearRuns.Where(x => x.wasSuccessful == true).Count();
+                var goodYearBankruptcies = goodYearRuns.Where(x => x.wasSuccessful == false).Count();
+                var goodYearSuccesses = goodYearRuns.Where(x => x.wasSuccessful == true).Count();
+
+
+                successRateBadYears = badYearSuccesses / (decimal)(badYearSuccesses + badYearBankruptcies);
+                successRateGoodYears = goodYearSuccesses / (decimal)(goodYearSuccesses + goodYearBankruptcies);
+
             }
             else
             {
                 averageAgeAtBankruptcy = -1;
                 minAgeAtBankruptcy = -1;
                 maxAgeAtBankruptcy = -1;
-                //averageNumberOfRecessionsInBankruptcyRuns = -1;
+                averageNumberOfRecessionsInBankruptcyRuns = -1;
                 bankruptcyAge90Percent = -1;
                 bankruptcyAge95Percent = -1;
                 bankruptcyAge99Percent = -1;
             }
             if (totalRunsWithoutBankruptcy > 0)
             {
-                //averageNumberOfRecessionsInNonBankruptcyRuns = (decimal)simRuns
-                //    .Where(x => x.wasSuccessful == true)
-                //    .Average(x => x.numberofrecessions);
+                averageNumberOfRecessionsInNonBankruptcyRuns = (decimal)simRuns
+                    .Where(x => x.wasSuccessful == true)
+                    .Average(x => x.numberofrecessions);
                 averageWealthAtDeath = (decimal)simRuns.Average(x => x.wealthAtDeath);
             }
             else
             {
-                //averageNumberOfRecessionsInNonBankruptcyRuns = -10.0m;
+                averageNumberOfRecessionsInNonBankruptcyRuns = -10.0m;
                 averageWealthAtDeath = -10.0m;
             }
             averageWealthAtRetirement = (decimal)simRuns.Average(x => x.wealthAtRetirement);
@@ -339,8 +363,8 @@ namespace Lib.Engine.MontyCarlo
                     cmd.AddParameter(new DbCommandParameter() { ParameterName = "bankruptcyage95percent", DbType = ParamDbType.Numeric, Value = bankruptcyAge95Percent });
                     cmd.AddParameter(new DbCommandParameter() { ParameterName = "bankruptcyage99percent", DbType = ParamDbType.Numeric, Value = bankruptcyAge99Percent });
                     cmd.AddParameter(new DbCommandParameter() { ParameterName = "maxageatbankruptcy", DbType = ParamDbType.Numeric, Value = maxAgeAtBankruptcy });
-                    //cmd.AddParameter(new DbCommandParameter() { ParameterName = "averagenumberofrecessionsinbankruptcyruns", DbType = ParamDbType.Numeric, Value = averageNumberOfRecessionsInBankruptcyRuns });
-                    //cmd.AddParameter(new DbCommandParameter() { ParameterName = "averagenumberofrecessionsinnonbankruptcyruns", DbType = ParamDbType.Numeric, Value = averageNumberOfRecessionsInNonBankruptcyRuns });
+                    cmd.AddParameter(new DbCommandParameter() { ParameterName = "averagenumberofrecessionsinbankruptcyruns", DbType = ParamDbType.Numeric, Value = averageNumberOfRecessionsInBankruptcyRuns });
+                    cmd.AddParameter(new DbCommandParameter() { ParameterName = "averagenumberofrecessionsinnonbankruptcyruns", DbType = ParamDbType.Numeric, Value = averageNumberOfRecessionsInNonBankruptcyRuns });
                     cmd.AddParameter(new DbCommandParameter() { ParameterName = "averagewealthatretirement", DbType = ParamDbType.Numeric, Value = averageWealthAtRetirement });
                     cmd.AddParameter(new DbCommandParameter() { ParameterName = "averagewealthatdeath", DbType = ParamDbType.Numeric, Value = averageWealthAtDeath });
                     cmd.AddParameter(new DbCommandParameter() { ParameterName = "wealthatdeath90percent", DbType = ParamDbType.Numeric, Value = wealthAtDeath90Percent });
@@ -451,8 +475,8 @@ namespace Lib.Engine.MontyCarlo
                     cmd.AddParameter(new DbCommandParameter() { ParameterName = "bankruptcyage95percent", DbType = ParamDbType.Numeric, Value = bankruptcyAge95Percent });
                     cmd.AddParameter(new DbCommandParameter() { ParameterName = "bankruptcyage99percent", DbType = ParamDbType.Numeric, Value = bankruptcyAge99Percent });
                     cmd.AddParameter(new DbCommandParameter() { ParameterName = "maxageatbankruptcy", DbType = ParamDbType.Numeric, Value = maxAgeAtBankruptcy });
-                    //cmd.AddParameter(new DbCommandParameter() { ParameterName = "averagenumberofrecessionsinbankruptcyruns", DbType = ParamDbType.Numeric, Value = averageNumberOfRecessionsInBankruptcyRuns });
-                    //cmd.AddParameter(new DbCommandParameter() { ParameterName = "averagenumberofrecessionsinnonbankruptcyruns", DbType = ParamDbType.Numeric, Value = averageNumberOfRecessionsInNonBankruptcyRuns });
+                    cmd.AddParameter(new DbCommandParameter() { ParameterName = "averagenumberofrecessionsinbankruptcyruns", DbType = ParamDbType.Numeric, Value = averageNumberOfRecessionsInBankruptcyRuns });
+                    cmd.AddParameter(new DbCommandParameter() { ParameterName = "averagenumberofrecessionsinnonbankruptcyruns", DbType = ParamDbType.Numeric, Value = averageNumberOfRecessionsInNonBankruptcyRuns });
                     cmd.AddParameter(new DbCommandParameter() { ParameterName = "averagewealthatretirement", DbType = ParamDbType.Numeric, Value = averageWealthAtRetirement });
                     cmd.AddParameter(new DbCommandParameter() { ParameterName = "averagewealthatdeath", DbType = ParamDbType.Numeric, Value = averageWealthAtDeath });
                     cmd.AddParameter(new DbCommandParameter() { ParameterName = "wealthatdeath90percent", DbType = ParamDbType.Numeric, Value = wealthAtDeath90Percent });

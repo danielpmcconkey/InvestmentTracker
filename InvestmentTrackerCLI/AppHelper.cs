@@ -17,10 +17,12 @@ namespace InvestmentTrackerCLI
 {
     internal static class AppHelper
     {
-        
+        // <add key="ConnectionString" value="Host=localhost;Username=mcduck_app_dev;Password='R#x8QA4tGV?zB^|h';Database=HouseholdBudget;Timeout=15;Command Timeout=300;" />
+       
+
 
         // https://color.adobe.com/create/color-wheel
-        
+
         private const string _colorBgDark = "2D332D"; 
         private const string _colorBgMid = "B8D1B9";
         private const string _colorBgLight = "E0FFE1";
@@ -40,70 +42,70 @@ namespace InvestmentTrackerCLI
             {
                 if(arg.ToLower() == "shouldreadinitalcsvdata:true")
                 {
-                    FEATURETOGGLE._shouldReadInitalCSVData = true;
+                    FEATURETOGGLE.SHOULDREADINITALCSVDATA = true;
                     
                 }
                 if (arg.ToLower() == "shouldreadinitalcsvdata:false")
                 {
-                    FEATURETOGGLE._shouldReadInitalCSVData = false;
+                    FEATURETOGGLE.SHOULDREADINITALCSVDATA = false;
                 }
                 if (arg.ToLower() == "shouldwritejsondata:true")
                 {
-                    FEATURETOGGLE._shouldWriteJSONData = true;
+                    FEATURETOGGLE.SHOULDWRITEJSONDATA = true;
                 }
                 if (arg.ToLower() == "shouldwritejsondata:false")
                 {
-                    FEATURETOGGLE._shouldWriteJSONData = false;
+                    FEATURETOGGLE.SHOULDWRITEJSONDATA = false;
                 }
                 if (arg.ToLower() == "shouldreadjsonaccountdata:true")
                 {
-                    FEATURETOGGLE._shouldReadJSONAccountData = true;
+                    FEATURETOGGLE.SHOULDREADJSONACCOUNTDATA = true;
                 }
                 if (arg.ToLower() == "shouldreadjsonaccountdata:false")
                 {
-                    FEATURETOGGLE._shouldReadJSONAccountData = false;
+                    FEATURETOGGLE.SHOULDREADJSONACCOUNTDATA = false;
                 }
                 if (arg.ToLower() == "shouldreadjsonpricingdata:true")
                 {
-                    FEATURETOGGLE._shouldReadJSONPricingData = true;
+                    FEATURETOGGLE.SHOULDREADJSONPRICINGDATA = true;
                 }
                 if (arg.ToLower() == "shouldreadjsonpricingdata:false")
                 {
-                    FEATURETOGGLE._shouldReadJSONPricingData = false;
+                    FEATURETOGGLE.SHOULDREADJSONPRICINGDATA = false;
                 }
                 if (arg.ToLower() == "shouldcatchuppricingdata:true")
                 {
-                    FEATURETOGGLE._shouldCatchUpPricingData = true;
+                    FEATURETOGGLE.SHOULDCATCHUPPRICINGDATA = true;
                 }
                 if (arg.ToLower() == "shouldcatchuppricingdata:false")
                 {
-                    FEATURETOGGLE._shouldCatchUpPricingData = false;
+                    FEATURETOGGLE.SHOULDCATCHUPPRICINGDATA = false;
                 }
                 if (arg.ToLower() == "shouldblendpricingdata:true")
                 {
-                    FEATURETOGGLE._shouldBlendPricingData = true;
+                    FEATURETOGGLE.SHOULDBLENDPRICINGDATA = true;
                 }
                 if (arg.ToLower() == "shouldblendpricingdata:false")
                 {
-                    FEATURETOGGLE._shouldBlendPricingData = false;
+                    FEATURETOGGLE.SHOULDBLENDPRICINGDATA = false;
                 }
                 if (arg.ToLower() == "shouldprintnetworth:true")
                 {
-                    FEATURETOGGLE._shouldPrintNetWorth = true;
+                    FEATURETOGGLE.SHOULDPRINTNETWORTH = true;
                 }
                 if (arg.ToLower() == "shouldprintnetworth:false")
                 {
-                    FEATURETOGGLE._shouldPrintNetWorth = false;
+                    FEATURETOGGLE.SHOULDPRINTNETWORTH = false;
                 }
             }
             Logger.info("Feature toggles:");
-            Logger.info(string.Format("     _shouldReadInitalCSVData set to {0}", FEATURETOGGLE._shouldReadInitalCSVData));
-            Logger.info(string.Format("     _shouldWriteJSONData set to {0}", FEATURETOGGLE._shouldWriteJSONData));
-            Logger.info(string.Format("     _shouldReadJSONAccountData set to {0}", FEATURETOGGLE._shouldReadJSONAccountData));
-            Logger.info(string.Format("     _shouldReadJSONPricingData set to {0}", FEATURETOGGLE._shouldReadJSONPricingData));
-            Logger.info(string.Format("     _shouldCatchUpPricingData set to {0}", FEATURETOGGLE._shouldCatchUpPricingData));
-            Logger.info(string.Format("     _shouldBlendPricingData set to {0}", FEATURETOGGLE._shouldBlendPricingData));
-            Logger.info(string.Format("     _shouldPrintNetWorth set to {0}", FEATURETOGGLE._shouldPrintNetWorth));
+            Logger.info(string.Format("     _shouldReadInitalCSVData set to {0}", FEATURETOGGLE.SHOULDREADINITALCSVDATA));
+            Logger.info(string.Format("     _shouldWriteJSONData set to {0}", FEATURETOGGLE.SHOULDWRITEJSONDATA));
+            Logger.info(string.Format("     _shouldReadJSONAccountData set to {0}", FEATURETOGGLE.SHOULDREADJSONACCOUNTDATA));
+            Logger.info(string.Format("     _shouldReadJSONPricingData set to {0}", FEATURETOGGLE.SHOULDREADJSONPRICINGDATA));
+            Logger.info(string.Format("     _shouldCatchUpPricingData set to {0}", FEATURETOGGLE.SHOULDCATCHUPPRICINGDATA));
+            Logger.info(string.Format("     _shouldBlendPricingData set to {0}", FEATURETOGGLE.SHOULDBLENDPRICINGDATA));
+            Logger.info(string.Format("     _shouldPrintNetWorth set to {0}", FEATURETOGGLE.SHOULDPRINTNETWORTH));
         }
         internal static void Run()
         {
@@ -116,7 +118,7 @@ namespace InvestmentTrackerCLI
 
                 
 
-                if (FEATURETOGGLE._shouldReadInitalCSVData)
+                if (FEATURETOGGLE.SHOULDREADINITALCSVDATA)
                 {
                     Logger.info("Reading CSV accounts");
                     List<Account> initialAccounts = DataSerializationHandler.ReadInitialAccountsCSV();
@@ -128,13 +130,13 @@ namespace InvestmentTrackerCLI
                     // add the CSV accounts to the accounts list
                     accounts.AddRange(initialAccounts);
                 }
-                if (FEATURETOGGLE._shouldReadJSONAccountData)
+                if (FEATURETOGGLE.SHOULDREADJSONACCOUNTDATA)
                 {
                     Logger.info("De-serializing account and transaction data");
                     accounts.AddRange(DataSerializationHandler.DeSerializeAccountsData());
                     Logger.info("Finished de-serializing account and transaction data");
                 }
-                if (FEATURETOGGLE._shouldReadJSONPricingData)
+                if (FEATURETOGGLE.SHOULDREADJSONPRICINGDATA)
                 {
                     Logger.info("De-serializing pricing data");
                     prices.AddRange(DataSerializationHandler.DeSerializePricingData());
@@ -142,7 +144,7 @@ namespace InvestmentTrackerCLI
                 }
                 // create a pricing engine for use in further operations                 
                 PricingEngine pricingEngine = new PricingEngine(prices);
-                if (FEATURETOGGLE._shouldReadJSONAccountData)
+                if (FEATURETOGGLE.SHOULDREADJSONACCOUNTDATA)
                 {
                     Logger.info("Updating Fidelity transaction data");
                     accounts = FidelityScraper.GetTransactions(accounts, pricingEngine);
@@ -155,13 +157,13 @@ namespace InvestmentTrackerCLI
                     Logger.info("Finished updating Health Equity transaction data");
                 }
 
-                if (FEATURETOGGLE._shouldCatchUpPricingData)
+                if (FEATURETOGGLE.SHOULDCATCHUPPRICINGDATA)
                 {
                     Logger.info("Catching up pricing data");
                     prices = pricingEngine.CatchUpPrices(accounts);
                     Logger.info("Finished catching up pricing data");
                 }
-                if (FEATURETOGGLE._shouldBlendPricingData)
+                if (FEATURETOGGLE.SHOULDBLENDPRICINGDATA)
                 {
                     //const bool logPrices = true;
                     const bool logPrices = false;
@@ -183,7 +185,7 @@ namespace InvestmentTrackerCLI
                         pricingEngine.PrintPrices();
                     }
                 }
-                if (FEATURETOGGLE._shouldWriteJSONData)
+                if (FEATURETOGGLE.SHOULDWRITEJSONDATA)
                 {
                     // serialize data back to files
                     Logger.info("Serializing data back to files");
@@ -193,7 +195,7 @@ namespace InvestmentTrackerCLI
                 StringBuilder sbOutput = new StringBuilder();
                 double captionWidth = 0;
 
-                if (FEATURETOGGLE._shouldPrintNetWorth)
+                if (FEATURETOGGLE.SHOULDPRINTNETWORTH)
                 {
                     Logger.info("Printing net worth");
 
@@ -255,7 +257,7 @@ namespace InvestmentTrackerCLI
                     //Logger.info(Environment.NewLine + svg.xml + Environment.NewLine);
                     Logger.info("Finished printing net worth");
                 }
-                if (FEATURETOGGLE.shouldRunMontyCarlo)
+                if (FEATURETOGGLE.SHOULDRUNMONTYCARLO)
                 {
                     Logger.info("Running Monty Carlo simulation");
                     MontyCarloBatch mcBatch = MontyCarloHelper.RunMontyCarlo(accounts, pricingEngine);
@@ -269,6 +271,56 @@ namespace InvestmentTrackerCLI
                         graphPrefs, lineChartPrefs,
                         mcGraphData, "MontyCarloGraph");
                     sbOutput.AppendLine("<div>");
+                    string montyCarloInstructions = @" 
+                    <h1>Monty Carlo Simulation</h1>
+                    <p class='mcanalytics'>A Monty Carlo simulation is a simulation that iterates multiple times, each with different random
+                    perturbations to assess probability of outcome. In this case, we take the same financial input (the 
+                    infomation arrived at in the above graphs) plus certain assumptions, and run them through a mock future</p>
+                    <p class='mcanalytics'>The mock future we mean here is that we project forward, into the future, certain market values.
+                    We base those values on the past history of the S&P500. We have the S&P500 monthly data from 
+                    January 1928 to August 2021 and we pick a random point within that timeframe to start our
+                    imaginary future. If our random point is, say July of 1943, and July '43 dropped 0.03% from June '43,
+                    then our simulation's next month (" +
+                    DateTimeHelper.RoundToMonth(DateTime.Now, RoundDateDirection.UP).ToString("MMMM yyyy")
+                    + @") will have dropped 0.03% from last month (" +
+                    DateTimeHelper.RoundToMonth(DateTime.Now, RoundDateDirection.DOWN).ToString("MMMM yyyy")
+                    + @"). And we'll continue forward, using the same growth as actual history.</p>
+                    <p class='mcanalytics'>In this case, we ran the simulation " + mcBatch.numberOfSimsToRun.ToString() + @" times and each time
+                    introduced a little randomness, like inflation and bond yields. Thus we arrive at a higher confidence in
+                    our retirement planning.</p>
+                    <p>So what are the assumptions and rules?</p>
+                    <ul class='mcanalytics'>
+                    ";
+                    montyCarloInstructions += String.Format("<li>Your were born {0}</li>", mcBatch.simParams.birthDate.ToShortDateString());
+                    montyCarloInstructions += String.Format("<li>You plan to retire {0}</li>", mcBatch.simParams.retirementDate.ToShortDateString());
+                    montyCarloInstructions += String.Format("<li>You currently spend {0} per month on 'core' needs and another {1} on your lifestyle</li>", mcBatch.simParams.monthlySpendCoreToday.ToString("c"), mcBatch.simParams.monthlySpendLifeStyleToday.ToString("c"));
+                    montyCarloInstructions += String.Format("<li>You will continue to spend that much every month until you die, which will be at age {0}</li>", mcBatch.simParams.deathAgeOverride.ToString());
+                    montyCarloInstructions += String.Format("<li>However, that spend will go up with inflation, which will be between {0}% and {1}% year over year</li>", (mcBatch.simParams.annualInflationLow * 100).ToString("###.00"), (mcBatch.simParams.annualInflationHi * 100).ToString("###.00"));
+                    montyCarloInstructions += String.Format("<li>Between now and retirement, you'll earn {0} per month at your day job</li>", mcBatch.simParams.monthlyGrossIncomePreRetirement.ToString("c"));
+                    montyCarloInstructions += String.Format("<li>You'll be saving {0} a month in your Roth 401(k)</li>", mcBatch.simParams.monthlyInvestRoth401k.ToString("c"));
+                    montyCarloInstructions += String.Format("<li>You'll be saving {0} a month in your Traditional 401(k)</li>", mcBatch.simParams.monthlyInvestTraditional401k.ToString("c"));
+                    montyCarloInstructions += String.Format("<li>You'll be saving {0} a month in your HSA</li>", mcBatch.simParams.monthlyInvestHSA.ToString("c"));
+                    montyCarloInstructions += String.Format("<li>You'll be saving {0} a month in your taxable brokerage account</li>", mcBatch.simParams.monthlyInvestBrokerage.ToString("c"));
+                    montyCarloInstructions += String.Format("<li>And once a year, you'll be putting your equity bonus (RSU) of {0} (after tax) into your brokerage account</li>", mcBatch.simParams.annualRSUInvestmentPreTax.ToString("c"));
+                    montyCarloInstructions += String.Format("<li>Your regular cash bonus isn't counted because you like to spend it too much</li>", 0);
+                    montyCarloInstructions += String.Format("<li>As you invest, you will target stocks as being N percent with N being {0} - your age</li>", mcBatch.simParams.xMinusAgeStockPercentPreRetirement.ToString());
+                    montyCarloInstructions += String.Format("<li>Once you hit retirement, you'll stop investing and you will move to a bucket strategy, keeping {0} years of your inflation-adjusted lifestyle spend in cash, {1} years in bonds, and the rest in stocks</li>", mcBatch.simParams.numYearsCashBucketInRetirement.ToString("#0.0"), mcBatch.simParams.numYearsBondBucketInRetirement.ToString("#0.0"));
+                    montyCarloInstructions += String.Format("<li>Also at retirement, you'll drop your lifestyle spend to {0}% of what it was while working</li>", (mcBatch.simParams.retirementLifestyleAdjustment * 100).ToString("##.#")); 
+                    montyCarloInstructions += String.Format("<li>After age {0}, you will receive {1} per month in Social Security</li>", mcBatch.simParams.socialSecurityCollectionAge.ToString("##.#"), mcBatch.simParams.monthlyNetSocialSecurityIncome.ToString("c"));
+                    montyCarloInstructions += String.Format("<li>A recession is defined as when the average of the prior {0} months of market values is higher than the next {0} months and also when the market price of the simulation date is <= the market price from one year prior * {1}</li>", ConfigManager.GetInt("numMonthsToEvaluateRecession"), ConfigManager.GetDecimal("recessionPricePercentThreshold").ToString("0.00"));
+                    montyCarloInstructions += String.Format("<li>We're considered still in a recession if the market price at the simulation date is <= the price at the start of the recession * {0}</li>", ConfigManager.GetDecimal("recessionRecoveryPercent"));
+                    montyCarloInstructions += "<li>While we're in a recession, you'll fill your cash bucket entirely from bonds to allow your equity bucket to \"heal\"</li>";
+                    montyCarloInstructions += String.Format("<li>Also while in a recession, you'll party just a little less hard, dropping your lifestyle spend to {0}% of normal times</li>", (mcBatch.simParams.recessionLifestyleAdjustment * 100).ToString("###"));
+                    montyCarloInstructions += "<li>When not in a recession, you'll fill your cash bucket from equities and \"top off\" your bond bucket to desired amounts from equities</li>";
+                    montyCarloInstructions += String.Format("<li>You'll also cool your jets a bit if your total equity balance drops below your retirement balance, dropping your lifestyle spend to {0}% of fat times</li>", (mcBatch.simParams.maxSpendingPercentWhenBelowRetirementLevelEquity * 100).ToString("###"));
+                    montyCarloInstructions += "<li>All along the way, you'll pay taxes based on 2021 tax laws</li>";
+                    if(mcBatch.simParams.shouldMoveEquitySurplussToFillBondGapAlways)
+                    {
+                        montyCarloInstructions += "<li>If, in retirement, you still have more in equities than you did on retirement day, and your total bonds are less that the bond bucket target, top off your bond bucket from equities</li>";
+
+                    }
+                    sbOutput.AppendLine(montyCarloInstructions);
+                    sbOutput.AppendLine("</ul>");
                     sbOutput.AppendLine(svgMontyCarlo.MakeXML());
                     sbOutput.AppendLine("<p class='caption'>This chart shows the imaginary net worth by age from multiple simulation runs. Lines that make it to age 95 before reaching zero mean you outlive your money. Lines that hit zero before age 95 means you would have to tighten your belt (or die sooner). Assumptions and detailed results are printed below. </p>");
                     sbOutput.AppendLine("</div>");
@@ -279,15 +331,12 @@ namespace InvestmentTrackerCLI
                     sbOutput.AppendLine(string.Format("<p>Total runs without bankruptcy: {0}</p>", mcBatch.totalRunsWithoutBankruptcy.ToString("#,###")));
                     sbOutput.AppendLine(string.Format("<p>Average age at bankruptcy: {0}</p>", mcBatch.averageAgeAtBankruptcy.ToString("##.00")));
                     sbOutput.AppendLine(string.Format("<p>Minimum age at bankruptcy: {0}</p>", mcBatch.minAgeAtBankruptcy.ToString("##.00")));
-                    //sbOutput.AppendLine(string.Format("<p>Bankruptcy age 90th percentile: {0}</p>", mcBatch.bankruptcyAge90Percent.ToString("##.00")));
-                    //sbOutput.AppendLine(string.Format("<p>Bankruptcy age 95th percentile: {0}</p>", mcBatch.bankruptcyAge95Percent.ToString("##.00")));
-                    //sbOutput.AppendLine(string.Format("<p>Bankruptcy age 99th percentile: {0}</p>", mcBatch.bankruptcyAge99Percent.ToString("##.00")));
-                    //sbOutput.AppendLine(string.Format("<p>Average number of recessions in bankruptcy runs: {0}</p>", mcBatch.averageNumberOfRecessionsInBankruptcyRuns.ToString("##.00")));
-                    //sbOutput.AppendLine(string.Format("<p>Average number of recessions in non-bankruptcy runs: {0}</p>", mcBatch.averageNumberOfRecessionsInNonBankruptcyRuns.ToString("##.00")));
                     sbOutput.AppendLine(string.Format("<p>Max age at bankruptcy: {0} (oldest age of bankruptcy)</p>", mcBatch.maxAgeAtBankruptcy.ToString("##.00")));
+                    sbOutput.AppendLine(string.Format("<p>Average number of recessions in bankruptcy runs: {0}</p>", mcBatch.averageNumberOfRecessionsInBankruptcyRuns.ToString("##.00")));
+                    sbOutput.AppendLine(string.Format("<p>Average number of recessions in non-bankruptcy runs: {0}</p>", mcBatch.averageNumberOfRecessionsInNonBankruptcyRuns.ToString("##.00")));
                     sbOutput.AppendLine(string.Format("<p>Average wealth at death: {0}</p>", mcBatch.averageWealthAtDeath.ToString("c")));
-                    //sbOutput.AppendLine(string.Format("<p>Wealth at death 90th percentile: {0}</p>", mcBatch.wealthAtDeath90Percent.ToString("c")));
-                    //sbOutput.AppendLine(string.Format("<p>Wealth at death 95th percentile: {0}</p>", mcBatch.wealthAtDeath95Percent.ToString("c")));
+                    sbOutput.AppendLine(string.Format("<p>Success rate in \"bad\" years: {0}%</p>", (mcBatch.successRateBadYears * 100).ToString("###.00")));
+                    sbOutput.AppendLine(string.Format("<p>Success rate in \"good\" years: {0}%</p>", (mcBatch.successRateGoodYears * 100).ToString("###.00")));
                     sbOutput.AppendLine("</div>");
                     Logger.info("Finished running Monty Carlo simulation");
                 }
@@ -328,15 +377,15 @@ namespace InvestmentTrackerCLI
             HTML.AppendLine(String.Format(" width: {0}px;", captionWidth));
             HTML.AppendLine("padding: 5px 5px 5px 20px;");
             HTML.AppendLine("background-color:#cccccc;");
-            HTML.AppendLine("font-size:12px;");
+            HTML.AppendLine("font-size:18px;");
             HTML.AppendLine("margin-top:0px;");
             HTML.AppendLine("}");
             HTML.AppendLine(".mcanalytics {");
             HTML.AppendLine(String.Format(" width: {0}px;", captionWidth));
-            HTML.AppendLine("font-size:12px;");
+            HTML.AppendLine("font-size:18px;");
             HTML.AppendLine("}");
             HTML.AppendLine(".mcanalytics h3 {");
-            HTML.AppendLine("font-size:16px;");
+            HTML.AppendLine("font-size:21px;");
             HTML.AppendLine(String.Format("color: #{0};", _colorTextBrightest));            
             HTML.AppendLine("}");
 
