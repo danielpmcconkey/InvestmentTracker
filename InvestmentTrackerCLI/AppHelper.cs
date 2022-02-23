@@ -331,6 +331,7 @@ namespace InvestmentTrackerCLI
                     sbOutput.AppendLine(string.Format("<p>Total runs without bankruptcy: {0}</p>", mcBatch.totalRunsWithoutBankruptcy.ToString("#,###")));
                     sbOutput.AppendLine(string.Format("<p>Average age at bankruptcy: {0}</p>", mcBatch.averageAgeAtBankruptcy.ToString("##.00")));
                     sbOutput.AppendLine(string.Format("<p>Minimum age at bankruptcy: {0}</p>", mcBatch.minAgeAtBankruptcy.ToString("##.00")));
+                    sbOutput.AppendLine(string.Format("<p>Average total lifestyle spend: {0}</p>", mcBatch.averageLifeStyleSpend.ToString("c")));
                     sbOutput.AppendLine(string.Format("<p>Max age at bankruptcy: {0} (oldest age of bankruptcy)</p>", mcBatch.maxAgeAtBankruptcy.ToString("##.00")));
                     sbOutput.AppendLine(string.Format("<p>Average number of recessions in bankruptcy runs: {0}</p>", mcBatch.averageNumberOfRecessionsInBankruptcyRuns.ToString("##.00")));
                     sbOutput.AppendLine(string.Format("<p>Average number of recessions in non-bankruptcy runs: {0}</p>", mcBatch.averageNumberOfRecessionsInNonBankruptcyRuns.ToString("##.00")));

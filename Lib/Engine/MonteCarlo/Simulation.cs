@@ -56,6 +56,7 @@ namespace Lib.Engine.MonteCarlo
         private decimal maxSpendingPercentWhenBelowRetirementLevelEquity = .9m;
         private bool _isBankrupt = false;
         private decimal _socialSecurityCollectionAge = 72;
+        private long _totalLifeStyleSpend;
         #endregion sim values
 
 
@@ -72,6 +73,7 @@ namespace Lib.Engine.MonteCarlo
             // load parameters of the run
             //this.simParams = simParams;
             totalCashOnHand = 0;
+            _totalLifeStyleSpend = 0;
             monthlyNetSocialSecurityIncome = convertFloatAmountToSafeCalcInt(simParams.monthlyNetSocialSecurityIncome);
             monthlySpendCoreToday = convertFloatAmountToSafeCalcInt(simParams.monthlySpendCoreToday);
             monthlySpendLifeStyleToday = convertFloatAmountToSafeCalcInt(simParams.monthlySpendLifeStyleToday);
@@ -278,7 +280,7 @@ namespace Lib.Engine.MonteCarlo
                 // done processing for the day
                 simulationRunDate = simulationRunDate.AddMonths(1);
             }
-            // sim over, your money outlived you
+            // sim over
             calculateNetWorth();
             if (!_isBankrupt)
             {
@@ -287,6 +289,8 @@ namespace Lib.Engine.MonteCarlo
                 simulationRunResult.wealthAtDeath = convertLongAmountToReadableFloat(simulationRunResult.netWorthSchedule
                     .OrderByDescending(x => x.dateWithinSim).First().totalNetWorth);
             }
+
+            simulationRunResult.totalLifeStyleSpend = convertLongAmountToReadableFloat(_totalLifeStyleSpend);
 
 
 
@@ -622,6 +626,7 @@ namespace Lib.Engine.MonteCarlo
             
             
             payWithCash(thisMonthsBills + actualLifestyleSpend);
+            _totalLifeStyleSpend += actualLifestyleSpend;
         }
         private void payTaxes()
         {

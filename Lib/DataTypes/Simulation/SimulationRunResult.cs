@@ -19,6 +19,7 @@ namespace Lib.DataTypes.Simulation
         public decimal wealthAtRetirement { get; set; }
         public decimal wealthAtDeath { get; set; }
         public List<NetWorth> netWorthSchedule { get; set; }
+        public decimal totalLifeStyleSpend { get; set; }
         public DateTime retirementDateHistoricalAnalog { get; set; }
 
         private void logNetWorthSchedule()

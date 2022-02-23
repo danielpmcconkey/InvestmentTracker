@@ -12,7 +12,7 @@ namespace Lib.Engine.MonteCarlo
     {
         public Guid runId { get; set; }
         public string monteCarloVersion { get { return _monteCarloVersion; } set { } }
-        private const string _monteCarloVersion = "2022.02.23.012";
+        private const string _monteCarloVersion = "2022.02.23.013";
         public DateTime runDate { get; set; }
         public SimulationParameters simParams { get; set; }
         public List<SimulationRunResult> simRuns { get; set; }
@@ -32,6 +32,7 @@ namespace Lib.Engine.MonteCarlo
         public decimal averageNumberOfRecessionsInNonBankruptcyRuns { get; set; }
         public decimal averageWealthAtRetirement { get; set; }
         public decimal averageWealthAtDeath { get; set; }
+        public decimal averageLifeStyleSpend { get; set; }
         public decimal wealthAtDeath90Percent { get; set; }   // best wealth at death for the worst 10% of success runs
         public decimal wealthAtDeath95Percent { get; set; }   // best wealth at death for the worst 5% of success runs
         //public Dictionary<int, int> bankruptcyCountsByRetirementAnalogYear { get; set; }
@@ -178,6 +179,7 @@ namespace Lib.Engine.MonteCarlo
             totalRunsWithBankruptcy = bankruptcyRuns.Count();
             var successfulRuns = simRuns.Where(x => x.wasSuccessful == true);
             totalRunsWithoutBankruptcy = successfulRuns.Count();
+            averageLifeStyleSpend = simRuns.Average(x => x.totalLifeStyleSpend);
 
             //bankruptcyCountsByRetirementAnalogYear = new Dictionary<int, int>();
 
@@ -395,7 +397,8 @@ namespace Lib.Engine.MonteCarlo
                         wealthatdeath90percent,
                         wealthatdeath95percent,
                         successrateinbadyears,
-                        successrateingoodyears
+                        successrateingoodyears,
+                        averagelifestylespend
                     )
                     VALUES (
                         @runid, 
@@ -418,7 +421,8 @@ namespace Lib.Engine.MonteCarlo
                         @wealthatdeath90percent,
                         @wealthatdeath95percent,
                         @successrateinbadyears,
-                        @successrateingoodyears
+                        @successrateingoodyears,
+                        @averageLifeStyleSpend
                     );
                     ";
                 
@@ -446,6 +450,7 @@ namespace Lib.Engine.MonteCarlo
                     cmd.AddParameter(new DbCommandParameter() { ParameterName = "wealthatdeath95percent", DbType = ParamDbType.Numeric, Value = wealthAtDeath95Percent });
                     cmd.AddParameter(new DbCommandParameter() { ParameterName = "successrateinbadyears", DbType = ParamDbType.Numeric, Value = successRateBadYears });
                     cmd.AddParameter(new DbCommandParameter() { ParameterName = "successrateingoodyears", DbType = ParamDbType.Numeric, Value = successRateGoodYears });
+                    cmd.AddParameter(new DbCommandParameter() { ParameterName = "averageLifeStyleSpend", DbType = ParamDbType.Numeric, Value = averageLifeStyleSpend });
 
                     int numRowsAffected = PostgresDAL.executeNonQuery(cmd.npgsqlCommand);
                     if (numRowsAffected != 1)
