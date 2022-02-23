@@ -9,7 +9,7 @@ namespace Utilities
     public static class FEATURETOGGLE
     {
         /* miscellaneous features */
-        public static bool NO_WRITE = true; // should be false in a normal run
+        public static bool NO_WRITE = false; // should be false in a normal run
         public static bool MULTITHREAD = true;
         public static bool SHOULDDEBUGSIMLOGIC = false;
 

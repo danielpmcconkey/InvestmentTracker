@@ -55,6 +55,14 @@ namespace Lib.Engine.MonteCarlo
             graphData.AddSeries(nintiethPercentiles.Item1);
             graphData.AddSeries(nintiethPercentiles.Item2);
 
+            // add a vertical "retirement" bar
+            GraphSeries retirementBar = new GraphSeries("Retirement bar", TypeHelper.int32Type, TypeHelper.int64Type);
+            retirementBar.seriesPrefs.strokeHexColor = ColorHelper.red;
+            retirementBar.seriesPrefs.strokeWidthInPx = 6;
+            retirementBar.data.Add((65, (long)0));
+            retirementBar.data.Add((65, (long)15000000));
+            graphData.AddSeries(retirementBar);
+
             return graphData;
         }
         public static MonteCarloBatch RunMonteCarlo(List<Account> accounts, PricingEngine pricingEngine)
@@ -165,7 +173,6 @@ namespace Lib.Engine.MonteCarlo
             mc.runBatch();
             return mc;
         }
-
         private static GraphSeries GetMedianFromSimResults(List<SimulationRunResult> simResults, DateTime birthDate)
         {
             GraphSeries graphSeries = new GraphSeries();

@@ -12,7 +12,7 @@ namespace Lib.Engine.MonteCarlo
     {
         public Guid runId { get; set; }
         public string monteCarloVersion { get { return _monteCarloVersion; } set { } }
-        private const string _monteCarloVersion = "2022.02.22.011";
+        private const string _monteCarloVersion = "2022.02.23.012";
         public DateTime runDate { get; set; }
         public SimulationParameters simParams { get; set; }
         public List<SimulationRunResult> simRuns { get; set; }
@@ -285,6 +285,90 @@ namespace Lib.Engine.MonteCarlo
 
             return outList;
         }
+        public void writeParametersToDb()
+        {
+            using (var conn = PostgresDAL.getConnection())
+            {
+                
+                string qParams = @"
+
+                INSERT INTO public.montecarlosimparameters(
+                            runid, startdate, birthdate, retirementdate, monthlygrossincomepreretirement, 
+                            monthlynetsocialsecurityincome, monthlyspendlifestyletoday, monthlyspendcoretoday, 
+                            monthlyinvestroth401k, monthlyinvesttraditional401k, monthlyinvestbrokerage, 
+                            monthlyinvesthsa, annualrsuinvestmentpretax, xminusagestockpercentpreretirement, 
+                            numyearscashbucketinretirement, numyearsbondbucketinretirement, 
+                            recessionrecoverypercent, shouldmoveequitysurplusstofillbondgapalways, 
+                            deathageoverride, recessionlifestyleadjustment, retirementlifestyleadjustment, 
+                            maxspendingpercentwhenbelowretirementlevelequity, annualinflationlow, 
+                            annualinflationhi, socialsecuritycollectionage)
+                    VALUES (
+                        @runId, 
+                        @startDate, 
+                        @birthDate, 
+                        @retirementDate,
+                        @monthlyGrossIncomePreRetirement ,
+                        @monthlyNetSocialSecurityIncome ,
+                        @monthlySpendLifeStyleToday ,
+                        @monthlySpendCoreToday ,
+                        @monthlyInvestRoth401k ,
+                        @monthlyInvestTraditional401k ,
+                        @monthlyInvestBrokerage ,
+                        @monthlyInvestHSA ,
+                        @annualRSUInvestmentPreTax ,
+                        @xMinusAgeStockPercentPreRetirement ,
+                        @numYearsCashBucketInRetirement ,
+                        @numYearsBondBucketInRetirement ,
+                        @recessionRecoveryPercent ,
+                        @shouldMoveEquitySurplussToFillBondGapAlways ,
+                        @deathAgeOverride ,
+                        @recessionLifestyleAdjustment,
+                        @retirementLifestyleAdjustment,
+                        @maxSpendingPercentWhenBelowRetirementLevelEquity ,
+                        @annualInflationLow,
+                        @annualInflationHi,
+                        @socialSecurityCollectionAge );
+
+                        ";
+                PostgresDAL.openConnection(conn);
+                using (DbCommand cmd = new DbCommand(qParams, conn))
+                {
+                    cmd.AddParameter(new DbCommandParameter() { ParameterName = "runId", DbType = ParamDbType.Uuid, Value = runId });
+                    cmd.AddParameter(new DbCommandParameter { ParameterName = "startDate", DbType = ParamDbType.Timestamp, Value = simParams.startDate });
+                    cmd.AddParameter(new DbCommandParameter { ParameterName = "birthDate", DbType = ParamDbType.Timestamp, Value = simParams.birthDate });
+                    cmd.AddParameter(new DbCommandParameter { ParameterName = "retirementDate", DbType = ParamDbType.Timestamp, Value = simParams.retirementDate });
+                    cmd.AddParameter(new DbCommandParameter { ParameterName = "monthlyGrossIncomePreRetirement", DbType = ParamDbType.Numeric, Value = simParams.monthlyGrossIncomePreRetirement });
+                    cmd.AddParameter(new DbCommandParameter { ParameterName = "monthlyNetSocialSecurityIncome", DbType = ParamDbType.Numeric, Value = simParams.monthlyNetSocialSecurityIncome });
+                    cmd.AddParameter(new DbCommandParameter { ParameterName = "monthlySpendLifeStyleToday", DbType = ParamDbType.Numeric, Value = simParams.monthlySpendLifeStyleToday });
+                    cmd.AddParameter(new DbCommandParameter { ParameterName = "monthlySpendCoreToday", DbType = ParamDbType.Numeric, Value = simParams.monthlySpendCoreToday });
+                    cmd.AddParameter(new DbCommandParameter { ParameterName = "monthlyInvestRoth401k", DbType = ParamDbType.Numeric, Value = simParams.monthlyInvestRoth401k });
+                    cmd.AddParameter(new DbCommandParameter { ParameterName = "monthlyInvestTraditional401k", DbType = ParamDbType.Numeric, Value = simParams.monthlyInvestTraditional401k });
+                    cmd.AddParameter(new DbCommandParameter { ParameterName = "monthlyInvestBrokerage", DbType = ParamDbType.Numeric, Value = simParams.monthlyInvestBrokerage });
+                    cmd.AddParameter(new DbCommandParameter { ParameterName = "monthlyInvestHSA", DbType = ParamDbType.Numeric, Value = simParams.monthlyInvestHSA });
+                    cmd.AddParameter(new DbCommandParameter { ParameterName = "annualRSUInvestmentPreTax", DbType = ParamDbType.Numeric, Value = simParams.annualRSUInvestmentPreTax });
+                    cmd.AddParameter(new DbCommandParameter { ParameterName = "xMinusAgeStockPercentPreRetirement", DbType = ParamDbType.Numeric, Value = simParams.xMinusAgeStockPercentPreRetirement });
+                    cmd.AddParameter(new DbCommandParameter { ParameterName = "numYearsCashBucketInRetirement", DbType = ParamDbType.Numeric, Value = simParams.numYearsCashBucketInRetirement });
+                    cmd.AddParameter(new DbCommandParameter { ParameterName = "numYearsBondBucketInRetirement", DbType = ParamDbType.Numeric, Value = simParams.numYearsBondBucketInRetirement });
+                    cmd.AddParameter(new DbCommandParameter { ParameterName = "recessionRecoveryPercent", DbType = ParamDbType.Numeric, Value = simParams.recessionRecoveryPercent });
+                    cmd.AddParameter(new DbCommandParameter { ParameterName = "shouldMoveEquitySurplussToFillBondGapAlways", DbType = ParamDbType.Boolean, Value = simParams.shouldMoveEquitySurplussToFillBondGapAlways });
+                    cmd.AddParameter(new DbCommandParameter { ParameterName = "deathAgeOverride", DbType = ParamDbType.Integer, Value = simParams.deathAgeOverride });
+                    cmd.AddParameter(new DbCommandParameter { ParameterName = "recessionLifestyleAdjustment", DbType = ParamDbType.Numeric, Value = simParams.recessionLifestyleAdjustment });
+                    cmd.AddParameter(new DbCommandParameter { ParameterName = "retirementLifestyleAdjustment", DbType = ParamDbType.Numeric, Value = simParams.retirementLifestyleAdjustment });
+                    cmd.AddParameter(new DbCommandParameter { ParameterName = "maxSpendingPercentWhenBelowRetirementLevelEquity", DbType = ParamDbType.Numeric, Value = simParams.maxSpendingPercentWhenBelowRetirementLevelEquity });
+                    cmd.AddParameter(new DbCommandParameter { ParameterName = "annualInflationLow", DbType = ParamDbType.Numeric, Value = simParams.annualInflationLow });
+                    cmd.AddParameter(new DbCommandParameter { ParameterName = "annualInflationHi", DbType = ParamDbType.Numeric, Value = simParams.annualInflationHi });
+                    cmd.AddParameter(new DbCommandParameter { ParameterName = "socialSecurityCollectionAge", DbType = ParamDbType.Numeric, Value = simParams.socialSecurityCollectionAge });
+
+                    int numRowsAffected = PostgresDAL.executeNonQuery(cmd.npgsqlCommand);
+                    if (numRowsAffected != 1)
+                    {
+                        throw new Exception(string.Format("MonteCarloBatch.writeSelfToDb (parameters) data insert returned {0} rows. Expected 1.", numRowsAffected));
+                    }
+                }
+            }
+
+        }
+
         public void writeSelfToDb()
         {
             using (var conn = PostgresDAL.getConnection())
@@ -310,13 +394,8 @@ namespace Lib.Engine.MonteCarlo
                         averagewealthatdeath,
                         wealthatdeath90percent,
                         wealthatdeath95percent,
-                        monthlyInvestBrokerage,
-                        xMinusAgeStockPercentPreRetirement,
-                        numYearsBondBucketInRetirement,
-                        recessionRecoveryPercent,
-                        recessionLifestyleAdjustment,
-                        retirementDate,
-                        maxSpendingPercentWhenBelowRetirementLevelEquity
+                        successrateinbadyears,
+                        successrateingoodyears
                     )
                     VALUES (
                         @runid, 
@@ -338,15 +417,11 @@ namespace Lib.Engine.MonteCarlo
                         @averagewealthatdeath,
                         @wealthatdeath90percent,
                         @wealthatdeath95percent,
-                        @monthlyInvestBrokerage,
-                        @xMinusAgeStockPercentPreRetirement,
-                        @numYearsBondBucketInRetirement,
-                        @recessionRecoveryPercent,
-                        @recessionLifestyleAdjustment,
-                        @retirementDate,
-                        @maxSpendingPercentWhenBelowRetirementLevelEquity
+                        @successrateinbadyears,
+                        @successrateingoodyears
                     );
                     ";
+                
                 PostgresDAL.openConnection(conn);
                 using (DbCommand cmd = new DbCommand(q, conn))
                 {
@@ -369,51 +444,8 @@ namespace Lib.Engine.MonteCarlo
                     cmd.AddParameter(new DbCommandParameter() { ParameterName = "averagewealthatdeath", DbType = ParamDbType.Numeric, Value = averageWealthAtDeath });
                     cmd.AddParameter(new DbCommandParameter() { ParameterName = "wealthatdeath90percent", DbType = ParamDbType.Numeric, Value = wealthAtDeath90Percent });
                     cmd.AddParameter(new DbCommandParameter() { ParameterName = "wealthatdeath95percent", DbType = ParamDbType.Numeric, Value = wealthAtDeath95Percent });
-                    cmd.AddParameter(new DbCommandParameter()
-                    {
-                        ParameterName = "monthlyInvestBrokerage",
-                        DbType = ParamDbType.Numeric,
-                        Value = simParams.monthlyInvestBrokerage
-                    });
-                    cmd.AddParameter(new DbCommandParameter()
-                    {
-                        ParameterName = "xMinusAgeStockPercentPreRetirement",
-                        DbType = ParamDbType.Numeric,
-                        Value = simParams.xMinusAgeStockPercentPreRetirement
-                    });
-                    cmd.AddParameter(new DbCommandParameter()
-                    {
-                        ParameterName = "numYearsBondBucketInRetirement",
-                        DbType = ParamDbType.Numeric,
-                        Value = simParams.numYearsBondBucketInRetirement
-                    });
-                    cmd.AddParameter(new DbCommandParameter()
-                    {
-                        ParameterName = "recessionRecoveryPercent",
-                        DbType = ParamDbType.Numeric,
-                        Value = simParams.recessionRecoveryPercent
-                    });
-                    cmd.AddParameter(new DbCommandParameter()
-                    {
-                        ParameterName = "recessionLifestyleAdjustment",
-                        DbType = ParamDbType.Numeric,
-                        Value = simParams.recessionLifestyleAdjustment
-                    });
-                    cmd.AddParameter(new DbCommandParameter()
-                    {
-                        ParameterName = "retirementDate",
-                        DbType = ParamDbType.Timestamp,
-                        Value = simParams.retirementDate
-                    });
-                    cmd.AddParameter(new DbCommandParameter()
-                    {
-                        ParameterName = "maxSpendingPercentWhenBelowRetirementLevelEquity",
-                        DbType = ParamDbType.Numeric,
-                        Value = simParams.maxSpendingPercentWhenBelowRetirementLevelEquity
-                    });
-
-
-
+                    cmd.AddParameter(new DbCommandParameter() { ParameterName = "successrateinbadyears", DbType = ParamDbType.Numeric, Value = successRateBadYears });
+                    cmd.AddParameter(new DbCommandParameter() { ParameterName = "successrateingoodyears", DbType = ParamDbType.Numeric, Value = successRateGoodYears });
 
                     int numRowsAffected = PostgresDAL.executeNonQuery(cmd.npgsqlCommand);
                     if (numRowsAffected != 1)
@@ -421,6 +453,7 @@ namespace Lib.Engine.MonteCarlo
                         throw new Exception(string.Format("MonteCarloBatch.writeSelfToDb data insert returned {0} rows. Expected 1.", numRowsAffected));
                     }
                 }
+                writeParametersToDb();
             }
 
         }

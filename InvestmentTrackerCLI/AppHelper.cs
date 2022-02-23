@@ -394,7 +394,7 @@ namespace InvestmentTrackerCLI
                     ");
             HTML.AppendLine("<body>");
             HTML.AppendLine("<h1>Dan's Wealth Tracker</h1>");
-            HTML.AppendLine(string.Format("<h3>Created: {0}</h3>", DateTime.Now.ToShortDateString()));
+            HTML.AppendLine(string.Format("<h3>Created: {0}</h3>", DateTime.Now.ToString("MMMM dd, yyyy HH:mm")));
             HTML.AppendLine(sbOutput.ToString());
             HTML.AppendLine("</body>");
             HTML.AppendLine("</html>");
@@ -436,7 +436,7 @@ namespace InvestmentTrackerCLI
             };
         }
         
-
+        
 
     }
 }
