@@ -49,6 +49,7 @@ namespace Utilities
         public static bool SHOULDPRINTNETWORTH = true;
 
         public static bool SHOULDRUNMONTECARLO = true;
+        public static bool SHOULDRUNMONTECARLOBATCHES = true;
 
         /* command line args for default
          * shouldreadinitalcsvdata:false shouldwritejsondata:true shouldreadjsonaccountdata:true shouldreadjsonpricingdata:true shouldcatchuppricingdata:true shouldblendpricingdataa:true

@@ -257,6 +257,12 @@ namespace InvestmentTrackerCLI
                     //Logger.info(Environment.NewLine + svg.xml + Environment.NewLine);
                     Logger.info("Finished printing net worth");
                 }
+                if (FEATURETOGGLE.SHOULDRUNMONTECARLOBATCHES)
+                {
+                    Logger.info("Running Monte Carlo batches");
+                    MonteCarloHelper.RunMonteCarloBatches(100, accounts, pricingEngine);
+                    Logger.info("Finished running Monte Carlo batches");
+                }
                 if (FEATURETOGGLE.SHOULDRUNMONTECARLO)
                 {
                     Logger.info("Running Monte Carlo simulation");

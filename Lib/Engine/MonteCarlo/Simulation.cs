@@ -57,6 +57,8 @@ namespace Lib.Engine.MonteCarlo
         private bool _isBankrupt = false;
         private decimal _socialSecurityCollectionAge = 72;
         private long _totalLifeStyleSpend;
+        private decimal _livingLargeThreashold;  // if your total equities are greater that retirement level * this value, start living large
+        private decimal _livingLargeLifestyleSpendMultiplier;
         #endregion sim values
 
 
@@ -621,6 +623,12 @@ namespace Lib.Engine.MonteCarlo
                 if (totalEquity < (long)Math.Round(equityBalanceAtRetirement / 2M, 0))
                 {
                     actualLifestyleSpend = 0;
+                }
+                // if equity has risen above N times retirement level, engage livin' large mode
+                if (totalEquity >= (long)Math.Round(equityBalanceAtRetirement * _livingLargeThreashold, 0))
+                {
+                    actualLifestyleSpend = Convert.ToInt64(Math.Round(
+                         actualLifestyleSpend * _livingLargeLifestyleSpendMultiplier));
                 }
             }
             

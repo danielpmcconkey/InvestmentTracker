@@ -65,6 +65,161 @@ namespace Lib.Engine.MonteCarlo
 
             return graphData;
         }
+        public static void RunMonteCarloBatches(int numSeries, List<Account> accounts, PricingEngine pricingEngine)
+        {
+            for(int i = 0; i < numSeries; i++)
+            {
+                // pull from default configs
+                var retirementDate = ConfigManager.GetDateTime("RetirementDate");
+                var birthDate = ConfigManager.GetDateTime("BirthDate");
+                var monthlyGrossIncomePreRetirement = ConfigManager.GetDecimal("AnnualIncome") / 12.0m;
+                var monthlyNetSocialSecurityIncome = ConfigManager.GetDecimal("monthlyNetSocialSecurityIncome");
+                var monthlySpendLifeStyleToday = ConfigManager.GetDecimal("monthlySpendLifeStyleToday");
+                var monthlySpendCoreToday = ConfigManager.GetDecimal("monthlySpendCoreToday");
+                var monthlyInvestRoth401k = ConfigManager.GetDecimal("monthlyInvestRoth401k");
+                var monthlyInvestTraditional401k = ConfigManager.GetDecimal("monthlyInvestTraditional401k");
+                var monthlyInvestBrokerage = ConfigManager.GetDecimal("monthlyInvestBrokerage");
+                var monthlyInvestHSA = ConfigManager.GetDecimal("monthlyInvestHSA");
+                var annualRSUInvestmentPreTax = ConfigManager.GetDecimal("annualRSUInvestmentPreTax");
+                var xMinusAgeStockPercentPreRetirement = ConfigManager.GetDecimal("xMinusAgeStockPercentPreRetirement");
+                var numYearsCashBucketInRetirement = ConfigManager.GetDecimal("numYearsCashBucketInRetirement");
+                var numYearsBondBucketInRetirement = ConfigManager.GetDecimal("numYearsBondBucketInRetirement");
+                var recessionRecoveryPercent = ConfigManager.GetDecimal("recessionRecoveryPercent");
+                var shouldMoveEquitySurplussToFillBondGapAlways = ConfigManager.GetBool("shouldMoveEquitySurplussToFillBondGapAlways");
+                var deathAgeOverride = ConfigManager.GetInt("deathAgeOverride");
+                var recessionLifestyleAdjustment = ConfigManager.GetDecimal("recessionLifestyleAdjustment");
+                var retirementLifestyleAdjustment = ConfigManager.GetDecimal("retirementLifestyleAdjustment");
+                var maxSpendingPercentWhenBelowRetirementLevelEquity = ConfigManager.GetDecimal("maxSpendingPercentWhenBelowRetirementLevelEquity");
+                var annualInflationLow = ConfigManager.GetDecimal("annualInflationLow");
+                var annualInflationHi = ConfigManager.GetDecimal("annualInflationHi");
+                var socialSecurityCollectionAge = ConfigManager.GetDecimal("socialSecurityCollectionAge");
+                var livingLargeThreashold = ConfigManager.GetDecimal("livingLargeThreashold");
+                var livingLargeLifestyleSpendMultiplier = ConfigManager.GetDecimal("livingLargeLifestyleSpendMultiplier");
+                
+
+                // now randomize some
+                monthlySpendLifeStyleToday = RNG.getRandomDecimal(
+                    monthlySpendLifeStyleToday * 0.5M, monthlySpendLifeStyleToday * 2M);
+                xMinusAgeStockPercentPreRetirement = RNG.getRandomDecimal(
+                    xMinusAgeStockPercentPreRetirement * 0.5M, xMinusAgeStockPercentPreRetirement * 2M);
+                numYearsCashBucketInRetirement = RNG.getRandomDecimal(
+                    numYearsCashBucketInRetirement * 0.25M, numYearsCashBucketInRetirement * 4M);
+                numYearsBondBucketInRetirement = RNG.getRandomDecimal(
+                    numYearsBondBucketInRetirement * 0.25M, numYearsBondBucketInRetirement * 4M);
+                recessionRecoveryPercent = RNG.getRandomDecimal(0.8M, 1.25M);
+                shouldMoveEquitySurplussToFillBondGapAlways = RNG.getRandomBool();
+                recessionLifestyleAdjustment = RNG.getRandomDecimal(0.0M, 1.0M);
+                retirementLifestyleAdjustment = RNG.getRandomDecimal(0.0M, 1.0M);
+                maxSpendingPercentWhenBelowRetirementLevelEquity = RNG.getRandomDecimal(0.0M, 1.0M);
+                livingLargeThreashold = RNG.getRandomDecimal(1.2M, 5.0M);
+                livingLargeLifestyleSpendMultiplier = RNG.getRandomDecimal(1.2M, 5.0M);
+
+                SimulationParameters simParams = new SimulationParameters()
+                {
+                    startDate = DateTime.Now.Date,
+                    retirementDate = retirementDate,
+                    birthDate = birthDate,
+                    monthlyGrossIncomePreRetirement = monthlyGrossIncomePreRetirement,
+                    monthlyNetSocialSecurityIncome = monthlyNetSocialSecurityIncome,
+                    monthlySpendLifeStyleToday = monthlySpendLifeStyleToday,
+                    monthlySpendCoreToday = monthlySpendCoreToday,
+                    monthlyInvestRoth401k = monthlyInvestRoth401k,
+                    monthlyInvestTraditional401k = monthlyInvestTraditional401k,
+                    monthlyInvestBrokerage = monthlyInvestBrokerage,
+                    monthlyInvestHSA = monthlyInvestHSA,
+                    annualRSUInvestmentPreTax = annualRSUInvestmentPreTax,
+                    xMinusAgeStockPercentPreRetirement = xMinusAgeStockPercentPreRetirement,
+                    numYearsCashBucketInRetirement = numYearsCashBucketInRetirement,
+                    numYearsBondBucketInRetirement = numYearsBondBucketInRetirement,
+                    recessionRecoveryPercent = recessionRecoveryPercent,
+                    shouldMoveEquitySurplussToFillBondGapAlways = shouldMoveEquitySurplussToFillBondGapAlways,
+                    deathAgeOverride = deathAgeOverride,
+                    recessionLifestyleAdjustment = recessionLifestyleAdjustment,
+                    retirementLifestyleAdjustment = retirementLifestyleAdjustment,
+                    maxSpendingPercentWhenBelowRetirementLevelEquity = maxSpendingPercentWhenBelowRetirementLevelEquity,
+                    annualInflationLow = annualInflationLow,
+                    annualInflationHi = annualInflationHi,
+                    socialSecurityCollectionAge = socialSecurityCollectionAge,
+                    livingLargeThreashold = livingLargeThreashold,
+                    livingLargeLifestyleSpendMultiplier = livingLargeLifestyleSpendMultiplier,
+                };
+                List<Asset> assetsGoingIn = new List<Asset>();
+
+                DateTimeOffset today = DateTimeHelper.CreateDateFromParts(DateTime.Now.Year,
+                    DateTime.Now.Month, DateTime.Now.Day, 0, 0, 0);
+                foreach (var account in accounts)
+                {
+
+                    // group transactions by investment vehicle
+                    var transactionsByVehicle = account.Transactions
+                        .GroupBy(x => x.InvestmentVehicle)
+                        .Select(group => new { vehicle = group.Key, transactions = group.ToList() });
+                    foreach (var tGroup in transactionsByVehicle)
+                    {
+                        Asset a = new Asset();
+                        a.created = tGroup.transactions.Min(x => x.Date).Date;
+                        var allPurchases = tGroup.transactions
+                        .Where(x => x.TransactionType == TransactionType.PURCHASE);
+                        var allSales = tGroup.transactions
+                            .Where(x => x.TransactionType == TransactionType.SALE);
+                        decimal numShares = allPurchases.Sum(y => y.Quantity);
+                        numShares -= allSales.Sum(y => y.Quantity);
+                        decimal pricePerShare = pricingEngine.GetPriceAtDate(tGroup.vehicle, today).Price;
+                        a.amountCurrent = (long)(Math.Round(pricePerShare * numShares * 10000, 0));
+                        // RMD dates
+                        DateTime birthDayAt72 = ConfigManager.GetDateTime("BirthDate").AddYears(72);
+                        a.rmdDate = null;
+                        if (account.AccountType == AccountType.ROTH_IRA) a.rmdDate = null;
+                        if (account.AccountType == AccountType.TRADITIONAL_IRA) a.rmdDate = birthDayAt72;
+                        if (account.AccountType == AccountType.ROTH_401_K) a.rmdDate = birthDayAt72;
+                        if (account.AccountType == AccountType.TRADITIONAL_401_K) a.rmdDate = birthDayAt72;
+
+                        a.amountContributed = (long)(Math.Round(
+                            (allPurchases.Sum(x => x.CashPriceTotalTransaction) -
+                            allSales.Sum(x => x.CashPriceTotalTransaction)) * 10000, 0)
+                            );
+
+                        // tax buckets are:
+                        //     taxable (TAXABLE_BROKERAGE, OTHER)
+                        //     tax deferred (TRADITIONAL_401_K, TRADITIONAL_IRA)
+                        //     non-taxable (ROTH_401_K, , ROTH_IRA, HSA)
+                        a.taxBucket = TaxBucket.TAXABLE;
+                        if (account.AccountType == AccountType.TAXABLE_BROKERAGE
+                            || account.AccountType == AccountType.OTHER)
+                        {
+                            a.taxBucket = TaxBucket.TAXABLE;
+                        }
+                        if (account.AccountType == AccountType.TRADITIONAL_401_K
+                            || account.AccountType == AccountType.TRADITIONAL_IRA)
+                        {
+                            a.taxBucket = TaxBucket.TAXDEFERRED;
+                        }
+                        if (account.AccountType == AccountType.ROTH_401_K
+                            || account.AccountType == AccountType.ROTH_IRA
+                            || account.AccountType == AccountType.HSA)
+                        {
+                            a.taxBucket = TaxBucket.TAXFREE;
+                        }
+
+                        if (tGroup.vehicle.Type == InvestmentVehicleType.PUBLICLY_TRADED)
+                        {
+                            a.investmentIndex = InvestmentIndex.EQUITY;
+                            assetsGoingIn.Add(a);
+
+                        }
+                        //if (tGroup.vehicle.Type == InvestmentVehicleType.PRIVATELY_HELD)
+                        //{
+                        //    a.investmentIndex = InvestmentIndex.NONE;
+                        //}
+
+                    }
+                }
+
+                int numberOfSimsToRun = ConfigManager.GetInt("numberOfSimsToRun");
+                MonteCarloBatch mc = new MonteCarloBatch(simParams, assetsGoingIn, numberOfSimsToRun);
+                mc.runBatch();
+            }
+        }
         public static MonteCarloBatch RunMonteCarlo(List<Account> accounts, PricingEngine pricingEngine)
         {
             SimulationParameters simParams = new SimulationParameters()

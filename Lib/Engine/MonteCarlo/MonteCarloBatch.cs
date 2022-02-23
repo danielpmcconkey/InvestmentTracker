@@ -303,7 +303,8 @@ namespace Lib.Engine.MonteCarlo
                             recessionrecoverypercent, shouldmoveequitysurplusstofillbondgapalways, 
                             deathageoverride, recessionlifestyleadjustment, retirementlifestyleadjustment, 
                             maxspendingpercentwhenbelowretirementlevelequity, annualinflationlow, 
-                            annualinflationhi, socialsecuritycollectionage)
+                            annualinflationhi, socialsecuritycollectionage, livinglargethreashold,
+                            livinglargelifestylespendmultiplier)
                     VALUES (
                         @runId, 
                         @startDate, 
@@ -329,7 +330,10 @@ namespace Lib.Engine.MonteCarlo
                         @maxSpendingPercentWhenBelowRetirementLevelEquity ,
                         @annualInflationLow,
                         @annualInflationHi,
-                        @socialSecurityCollectionAge );
+                        @socialSecurityCollectionAge,
+                        @livingLargeThreashold,
+                        @livingLargeLifestyleSpendMultiplier
+                        );
 
                         ";
                 PostgresDAL.openConnection(conn);
@@ -360,6 +364,8 @@ namespace Lib.Engine.MonteCarlo
                     cmd.AddParameter(new DbCommandParameter { ParameterName = "annualInflationLow", DbType = ParamDbType.Numeric, Value = simParams.annualInflationLow });
                     cmd.AddParameter(new DbCommandParameter { ParameterName = "annualInflationHi", DbType = ParamDbType.Numeric, Value = simParams.annualInflationHi });
                     cmd.AddParameter(new DbCommandParameter { ParameterName = "socialSecurityCollectionAge", DbType = ParamDbType.Numeric, Value = simParams.socialSecurityCollectionAge });
+                    cmd.AddParameter(new DbCommandParameter { ParameterName = "livingLargeThreashold", DbType = ParamDbType.Numeric, Value = simParams.livingLargeThreashold });
+                    cmd.AddParameter(new DbCommandParameter { ParameterName = "livingLargeLifestyleSpendMultiplier", DbType = ParamDbType.Numeric, Value = simParams.livingLargeLifestyleSpendMultiplier });
 
                     int numRowsAffected = PostgresDAL.executeNonQuery(cmd.npgsqlCommand);
                     if (numRowsAffected != 1)

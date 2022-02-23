@@ -133,5 +133,10 @@ namespace Utilities
             CryptoRandom cr = new CryptoRandom();
             return cr.Next(minInclusive, maxInclusive + 1);
         }
+        public static bool getRandomBool()
+        {
+            if (getRandomInt(0, 99) > 49) return true;
+            return false;
+        }
     }
 }
