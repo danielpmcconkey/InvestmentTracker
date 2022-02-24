@@ -22,6 +22,7 @@ namespace Utilities
         Timestamp = NpgsqlDbType.Timestamp,
         Uuid = NpgsqlDbType.Uuid,
         Text = NpgsqlDbType.Text,
+        Json = NpgsqlDbType.Json,
     }
     public class DbCommandParameter
     {

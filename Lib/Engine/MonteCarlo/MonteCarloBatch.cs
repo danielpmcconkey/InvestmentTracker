@@ -12,38 +12,18 @@ namespace Lib.Engine.MonteCarlo
     {
         public Guid runId { get; set; }
         public string monteCarloVersion { get { return _monteCarloVersion; } set { } }
-        private const string _monteCarloVersion = "2022.02.23.013";
+        private const string _monteCarloVersion = "2022.02.23.014";
         public DateTime runDate { get; set; }
         public SimulationParameters simParams { get; set; }
         public List<SimulationRunResult> simRuns { get; set; }
         public List<Asset> assetsGoingIn { get; set; }
         public int numberOfSimsToRun { get; set; }
-
-        // results
-        public int totalRunsWithBankruptcy { get; set; }
-        public int totalRunsWithoutBankruptcy { get; set; }
-        public decimal averageAgeAtBankruptcy { get; set; }
-        public decimal minAgeAtBankruptcy { get; set; }
-        public decimal bankruptcyAge90Percent { get; set; }
-        public decimal bankruptcyAge95Percent { get; set; }
-        public decimal bankruptcyAge99Percent { get; set; }
-        public decimal maxAgeAtBankruptcy { get; set; }
-        public decimal averageNumberOfRecessionsInBankruptcyRuns { get; set; }
-        public decimal averageNumberOfRecessionsInNonBankruptcyRuns { get; set; }
-        public decimal averageWealthAtRetirement { get; set; }
-        public decimal averageWealthAtDeath { get; set; }
-        public decimal averageLifeStyleSpend { get; set; }
-        public decimal wealthAtDeath90Percent { get; set; }   // best wealth at death for the worst 10% of success runs
-        public decimal wealthAtDeath95Percent { get; set; }   // best wealth at death for the worst 5% of success runs
-        //public Dictionary<int, int> bankruptcyCountsByRetirementAnalogYear { get; set; }
-        //public Dictionary<int, int> successCountsByRetirementAnalogYear { get; set; }
-        public decimal successRateBadYears { get; set; }
-        public decimal successRateGoodYears { get; set; }
-
+        public Analytics analytics { get; set; }
 
         public MonteCarloBatch()
         {
             // only here for deserialization purposes
+            analytics = new Analytics();
         }
         public MonteCarloBatch(SimulationParameters simParams, List<Asset> assetsGoingIn,
             int numberOfSimsToRun)
@@ -53,6 +33,7 @@ namespace Lib.Engine.MonteCarlo
             this.simParams = simParams;
             this.assetsGoingIn = assetsGoingIn;
             this.numberOfSimsToRun = numberOfSimsToRun;
+            analytics = new Analytics();
         }
         public void extendRun(int newCount)
         {
@@ -173,40 +154,54 @@ namespace Lib.Engine.MonteCarlo
             string jsonString = DataSerializationHandler.SerializeMonteCarloBatch(this);
             return jsonString;
         }
-        private void populateAnalyticsFromRunResults()
+        private decimal GetMedianTotalLifeStyleSpend()
+        {
+            return GetTotalLifeStyleSpendAtNPercentile(50);
+        }
+        private decimal GetTotalLifeStyleSpendAtNPercentile(int N)
+        {
+            var orderedRuns = simRuns.OrderBy(x => x.totalLifeStyleSpend);
+            int runCount = orderedRuns.Count();
+            int index = (int) Math.Round(runCount * N * 0.01M, 0);
+            return orderedRuns.ElementAt(index).totalLifeStyleSpend;
+        }
+        public void populateAnalyticsFromRunResults()
         {
             List<SimulationRunResult> bankruptcyRuns = simRuns.Where(x => x.wasSuccessful == false).ToList();
-            totalRunsWithBankruptcy = bankruptcyRuns.Count();
+            analytics.totalRunsWithBankruptcy = bankruptcyRuns.Count();
             var successfulRuns = simRuns.Where(x => x.wasSuccessful == true);
-            totalRunsWithoutBankruptcy = successfulRuns.Count();
-            averageLifeStyleSpend = simRuns.Average(x => x.totalLifeStyleSpend);
+            analytics.totalRunsWithoutBankruptcy = successfulRuns.Count();
+            analytics.averageLifeStyleSpend = simRuns.Average(x => x.totalLifeStyleSpend);
+            analytics.medianLifeStyleSpend = GetMedianTotalLifeStyleSpend();
+            analytics.successRateOverall = analytics.totalRunsWithoutBankruptcy
+                / (analytics.totalRunsWithBankruptcy + (decimal)analytics.totalRunsWithoutBankruptcy);
 
             //bankruptcyCountsByRetirementAnalogYear = new Dictionary<int, int>();
 
-            if (totalRunsWithBankruptcy > 0)
+            if (analytics.totalRunsWithBankruptcy > 0)
             {
-                averageAgeAtBankruptcy = (decimal)bankruptcyRuns.Average(x => x.ageAtBankruptcy);
-                minAgeAtBankruptcy = (decimal)bankruptcyRuns.Min(x => x.ageAtBankruptcy);
-                maxAgeAtBankruptcy = (decimal)bankruptcyRuns.Max(x => x.ageAtBankruptcy);
-                
-                averageNumberOfRecessionsInBankruptcyRuns = (decimal)bankruptcyRuns.Average(x => x.numberofrecessions);
+                analytics.averageAgeAtBankruptcy = (decimal)bankruptcyRuns.Average(x => x.ageAtBankruptcy);
+                analytics.minAgeAtBankruptcy = (decimal)bankruptcyRuns.Min(x => x.ageAtBankruptcy);
+                analytics.maxAgeAtBankruptcy = (decimal)bankruptcyRuns.Max(x => x.ageAtBankruptcy);
+
+                analytics.averageNumberOfRecessionsInBankruptcyRuns = (decimal)bankruptcyRuns.Average(x => x.numberofrecessions);
 
                 List<SimulationRunResult> bankruptcies90Percent = getWorstNPerecentRuns(90);
                 List<SimulationRunResult> bankruptcies95Percent = getWorstNPerecentRuns(95);
                 List<SimulationRunResult> bankruptcies99Percent = getWorstNPerecentRuns(99);
 
-                bankruptcyAge90Percent = (bankruptcies90Percent.Count < 1) ? -10.0m
+                analytics.bankruptcyAge90Percent = (bankruptcies90Percent.Count < 1) ? -10.0m
                     : (decimal)bankruptcies90Percent.Min(x => x.ageAtBankruptcy);
-                bankruptcyAge95Percent = (bankruptcies90Percent.Count < 1) ? -10.0m
+                analytics.bankruptcyAge95Percent = (bankruptcies90Percent.Count < 1) ? -10.0m
                     : (decimal)bankruptcies95Percent.Min(x => x.ageAtBankruptcy);
-                bankruptcyAge99Percent = (bankruptcies90Percent.Count < 1) ? -10.0m
+                analytics.bankruptcyAge99Percent = (bankruptcies90Percent.Count < 1) ? -10.0m
                     : (decimal)bankruptcies99Percent.Min(x => x.ageAtBankruptcy);
 
                 List<SimulationRunResult> successes90Percent = getWorstNPerecentRuns(90, true);
                 List<SimulationRunResult> successes95Percent = getWorstNPerecentRuns(95, true);
-                wealthAtDeath90Percent = (successes90Percent.Count < 1) ? -10.0m
+                analytics.wealthAtDeath90Percent = (successes90Percent.Count < 1) ? -10.0m
                     : successes90Percent.Max(x => x.wealthAtDeath);
-                wealthAtDeath95Percent = (successes95Percent.Count < 1) ? -10.0m
+                analytics.wealthAtDeath95Percent = (successes95Percent.Count < 1) ? -10.0m
                     : successes95Percent.Max(x => x.wealthAtDeath);
 
                 /* get stats for the worst years to retire
@@ -225,33 +220,33 @@ namespace Lib.Engine.MonteCarlo
                 var goodYearSuccesses = goodYearRuns.Where(x => x.wasSuccessful == true).Count();
 
 
-                successRateBadYears = badYearSuccesses / (decimal)(badYearSuccesses + badYearBankruptcies);
-                successRateGoodYears = goodYearSuccesses / (decimal)(goodYearSuccesses + goodYearBankruptcies);
+                analytics.successRateBadYears = badYearSuccesses / (decimal)(badYearSuccesses + badYearBankruptcies);
+                analytics.successRateGoodYears = goodYearSuccesses / (decimal)(goodYearSuccesses + goodYearBankruptcies);
 
             }
             else
             {
-                averageAgeAtBankruptcy = -1;
-                minAgeAtBankruptcy = -1;
-                maxAgeAtBankruptcy = -1;
-                averageNumberOfRecessionsInBankruptcyRuns = -1;
-                bankruptcyAge90Percent = -1;
-                bankruptcyAge95Percent = -1;
-                bankruptcyAge99Percent = -1;
+                analytics.averageAgeAtBankruptcy = -1;
+                analytics.minAgeAtBankruptcy = -1;
+                analytics.maxAgeAtBankruptcy = -1;
+                analytics.averageNumberOfRecessionsInBankruptcyRuns = -1;
+                analytics.bankruptcyAge90Percent = -1;
+                analytics.bankruptcyAge95Percent = -1;
+                analytics.bankruptcyAge99Percent = -1;
             }
-            if (totalRunsWithoutBankruptcy > 0)
+            if (analytics.totalRunsWithoutBankruptcy > 0)
             {
-                averageNumberOfRecessionsInNonBankruptcyRuns = (decimal)simRuns
+                analytics.averageNumberOfRecessionsInNonBankruptcyRuns = (decimal)simRuns
                     .Where(x => x.wasSuccessful == true)
                     .Average(x => x.numberofrecessions);
-                averageWealthAtDeath = (decimal)simRuns.Average(x => x.wealthAtDeath);
+                analytics.averageWealthAtDeath = (decimal)simRuns.Average(x => x.wealthAtDeath);
             }
             else
             {
-                averageNumberOfRecessionsInNonBankruptcyRuns = -10.0m;
-                averageWealthAtDeath = -10.0m;
+                analytics.averageNumberOfRecessionsInNonBankruptcyRuns = -10.0m;
+                analytics.averageWealthAtDeath = -10.0m;
             }
-            averageWealthAtRetirement = (decimal)simRuns.Average(x => x.wealthAtRetirement);
+            analytics.averageWealthAtRetirement = (decimal)simRuns.Average(x => x.wealthAtRetirement);
         }
         private List<SimulationRunResult> getWorstNPerecentRuns(float percent, bool wasSuccessful = false)
         {
@@ -287,11 +282,13 @@ namespace Lib.Engine.MonteCarlo
 
             return outList;
         }
+        
+        #region DB Functions
         public void writeParametersToDb()
         {
             using (var conn = PostgresDAL.getConnection())
             {
-                
+
                 string qParams = @"
 
                 INSERT INTO public.montecarlosimparameters(
@@ -376,7 +373,6 @@ namespace Lib.Engine.MonteCarlo
             }
 
         }
-
         public void writeSelfToDb()
         {
             using (var conn = PostgresDAL.getConnection())
@@ -388,23 +384,7 @@ namespace Lib.Engine.MonteCarlo
                         rundate, 
                         serializedself, 
                         numberofsimstorun, 
-                        totalrunswithbankruptcy, 
-                        totalrunswithoutbankruptcy,
-                        averageageatbankruptcy, 
-                        minageatbankruptcy, 
-                        bankruptcyage90percent, 
-                        bankruptcyage95percent, 
-                        bankruptcyage99percent, 
-                        maxageatbankruptcy, 
-                        averagenumberofrecessionsinbankruptcyruns, 
-                        averagenumberofrecessionsinnonbankruptcyruns, 
-                        averagewealthatretirement, 
-                        averagewealthatdeath,
-                        wealthatdeath90percent,
-                        wealthatdeath95percent,
-                        successrateinbadyears,
-                        successrateingoodyears,
-                        averagelifestylespend
+                        analytics
                     )
                     VALUES (
                         @runid, 
@@ -412,26 +392,10 @@ namespace Lib.Engine.MonteCarlo
                         @rundate, 
                         @serializedself, 
                         @numberofsimstorun, 
-                        @totalrunswithbankruptcy, 
-                        @totalrunswithoutbankruptcy,
-                        @averageageatbankruptcy, 
-                        @minageatbankruptcy, 
-                        @bankruptcyage90percent, 
-                        @bankruptcyage95percent, 
-                        @bankruptcyage99percent, 
-                        @maxageatbankruptcy, 
-                        @averagenumberofrecessionsinbankruptcyruns, 
-                        @averagenumberofrecessionsinnonbankruptcyruns, 
-                        @averagewealthatretirement, 
-                        @averagewealthatdeath,
-                        @wealthatdeath90percent,
-                        @wealthatdeath95percent,
-                        @successrateinbadyears,
-                        @successrateingoodyears,
-                        @averageLifeStyleSpend
+                        @analytics
                     );
                     ";
-                
+
                 PostgresDAL.openConnection(conn);
                 using (DbCommand cmd = new DbCommand(q, conn))
                 {
@@ -440,23 +404,26 @@ namespace Lib.Engine.MonteCarlo
                     cmd.AddParameter(new DbCommandParameter() { ParameterName = "rundate", DbType = ParamDbType.Timestamp, Value = runDate });
                     cmd.AddParameter(new DbCommandParameter() { ParameterName = "serializedself", DbType = ParamDbType.Text, Value = serializeSelf() });
                     cmd.AddParameter(new DbCommandParameter() { ParameterName = "numberofsimstorun", DbType = ParamDbType.Integer, Value = numberOfSimsToRun });
-                    cmd.AddParameter(new DbCommandParameter() { ParameterName = "totalrunswithbankruptcy", DbType = ParamDbType.Integer, Value = totalRunsWithBankruptcy });
-                    cmd.AddParameter(new DbCommandParameter() { ParameterName = "totalrunswithoutbankruptcy", DbType = ParamDbType.Integer, Value = totalRunsWithoutBankruptcy });
-                    cmd.AddParameter(new DbCommandParameter() { ParameterName = "averageageatbankruptcy", DbType = ParamDbType.Numeric, Value = averageAgeAtBankruptcy });
-                    cmd.AddParameter(new DbCommandParameter() { ParameterName = "minageatbankruptcy", DbType = ParamDbType.Numeric, Value = minAgeAtBankruptcy });
-                    cmd.AddParameter(new DbCommandParameter() { ParameterName = "bankruptcyage90percent", DbType = ParamDbType.Numeric, Value = bankruptcyAge90Percent });
-                    cmd.AddParameter(new DbCommandParameter() { ParameterName = "bankruptcyage95percent", DbType = ParamDbType.Numeric, Value = bankruptcyAge95Percent });
-                    cmd.AddParameter(new DbCommandParameter() { ParameterName = "bankruptcyage99percent", DbType = ParamDbType.Numeric, Value = bankruptcyAge99Percent });
-                    cmd.AddParameter(new DbCommandParameter() { ParameterName = "maxageatbankruptcy", DbType = ParamDbType.Numeric, Value = maxAgeAtBankruptcy });
-                    cmd.AddParameter(new DbCommandParameter() { ParameterName = "averagenumberofrecessionsinbankruptcyruns", DbType = ParamDbType.Numeric, Value = averageNumberOfRecessionsInBankruptcyRuns });
-                    cmd.AddParameter(new DbCommandParameter() { ParameterName = "averagenumberofrecessionsinnonbankruptcyruns", DbType = ParamDbType.Numeric, Value = averageNumberOfRecessionsInNonBankruptcyRuns });
-                    cmd.AddParameter(new DbCommandParameter() { ParameterName = "averagewealthatretirement", DbType = ParamDbType.Numeric, Value = averageWealthAtRetirement });
-                    cmd.AddParameter(new DbCommandParameter() { ParameterName = "averagewealthatdeath", DbType = ParamDbType.Numeric, Value = averageWealthAtDeath });
-                    cmd.AddParameter(new DbCommandParameter() { ParameterName = "wealthatdeath90percent", DbType = ParamDbType.Numeric, Value = wealthAtDeath90Percent });
-                    cmd.AddParameter(new DbCommandParameter() { ParameterName = "wealthatdeath95percent", DbType = ParamDbType.Numeric, Value = wealthAtDeath95Percent });
-                    cmd.AddParameter(new DbCommandParameter() { ParameterName = "successrateinbadyears", DbType = ParamDbType.Numeric, Value = successRateBadYears });
-                    cmd.AddParameter(new DbCommandParameter() { ParameterName = "successrateingoodyears", DbType = ParamDbType.Numeric, Value = successRateGoodYears });
-                    cmd.AddParameter(new DbCommandParameter() { ParameterName = "averageLifeStyleSpend", DbType = ParamDbType.Numeric, Value = averageLifeStyleSpend });
+                    cmd.AddParameter(new DbCommandParameter() { ParameterName = "analytics", DbType = ParamDbType.Json, Value = analytics });
+                    
+                    //cmd.AddParameter(new DbCommandParameter() { ParameterName = "totalrunswithbankruptcy", DbType = ParamDbType.Integer, Value = totalRunsWithBankruptcy });
+                    //cmd.AddParameter(new DbCommandParameter() { ParameterName = "totalrunswithoutbankruptcy", DbType = ParamDbType.Integer, Value = totalRunsWithoutBankruptcy });
+                    //cmd.AddParameter(new DbCommandParameter() { ParameterName = "averageageatbankruptcy", DbType = ParamDbType.Numeric, Value = averageAgeAtBankruptcy });
+                    //cmd.AddParameter(new DbCommandParameter() { ParameterName = "minageatbankruptcy", DbType = ParamDbType.Numeric, Value = minAgeAtBankruptcy });
+                    //cmd.AddParameter(new DbCommandParameter() { ParameterName = "bankruptcyage90percent", DbType = ParamDbType.Numeric, Value = bankruptcyAge90Percent });
+                    //cmd.AddParameter(new DbCommandParameter() { ParameterName = "bankruptcyage95percent", DbType = ParamDbType.Numeric, Value = bankruptcyAge95Percent });
+                    //cmd.AddParameter(new DbCommandParameter() { ParameterName = "bankruptcyage99percent", DbType = ParamDbType.Numeric, Value = bankruptcyAge99Percent });
+                    //cmd.AddParameter(new DbCommandParameter() { ParameterName = "maxageatbankruptcy", DbType = ParamDbType.Numeric, Value = maxAgeAtBankruptcy });
+                    //cmd.AddParameter(new DbCommandParameter() { ParameterName = "averagenumberofrecessionsinbankruptcyruns", DbType = ParamDbType.Numeric, Value = averageNumberOfRecessionsInBankruptcyRuns });
+                    //cmd.AddParameter(new DbCommandParameter() { ParameterName = "averagenumberofrecessionsinnonbankruptcyruns", DbType = ParamDbType.Numeric, Value = averageNumberOfRecessionsInNonBankruptcyRuns });
+                    //cmd.AddParameter(new DbCommandParameter() { ParameterName = "averagewealthatretirement", DbType = ParamDbType.Numeric, Value = averageWealthAtRetirement });
+                    //cmd.AddParameter(new DbCommandParameter() { ParameterName = "averagewealthatdeath", DbType = ParamDbType.Numeric, Value = averageWealthAtDeath });
+                    //cmd.AddParameter(new DbCommandParameter() { ParameterName = "wealthatdeath90percent", DbType = ParamDbType.Numeric, Value = wealthAtDeath90Percent });
+                    //cmd.AddParameter(new DbCommandParameter() { ParameterName = "wealthatdeath95percent", DbType = ParamDbType.Numeric, Value = wealthAtDeath95Percent });
+                    //cmd.AddParameter(new DbCommandParameter() { ParameterName = "successrateinbadyears", DbType = ParamDbType.Numeric, Value = successRateBadYears });
+                    //cmd.AddParameter(new DbCommandParameter() { ParameterName = "successrateingoodyears", DbType = ParamDbType.Numeric, Value = successRateGoodYears });
+                    //cmd.AddParameter(new DbCommandParameter() { ParameterName = "averageLifeStyleSpend", DbType = ParamDbType.Numeric, Value = averageLifeStyleSpend });
+                    //cmd.AddParameter(new DbCommandParameter() { ParameterName = "medianLifeStyleSpend", DbType = ParamDbType.Numeric, Value = medianLifeStyleSpend });
 
                     int numRowsAffected = PostgresDAL.executeNonQuery(cmd.npgsqlCommand);
                     if (numRowsAffected != 1)
@@ -479,27 +446,7 @@ namespace Lib.Engine.MonteCarlo
                         rundate = @rundate, 
                         serializedself = @serializedself, 
                         numberofsimstorun = @numberofsimstorun, 
-                        totalrunswithbankruptcy = @totalrunswithbankruptcy, 
-                        totalrunswithoutbankruptcy = @totalrunswithoutbankruptcy,
-                        averageageatbankruptcy = @averageageatbankruptcy, 
-                        minageatbankruptcy = @minageatbankruptcy, 
-                        bankruptcyage90percent = @bankruptcyage90percent, 
-                        bankruptcyage95percent = @bankruptcyage95percent, 
-                        bankruptcyage99percent = @bankruptcyage99percent, 
-                        maxageatbankruptcy = @maxageatbankruptcy, 
-                        averagenumberofrecessionsinbankruptcyruns = @averagenumberofrecessionsinbankruptcyruns, 
-                        averagenumberofrecessionsinnonbankruptcyruns = @averagenumberofrecessionsinnonbankruptcyruns, 
-                        averagewealthatretirement = @averagewealthatretirement, 
-                        averagewealthatdeath = @averagewealthatdeath,
-                        wealthatdeath90percent = @wealthatdeath90percent,
-                        wealthatdeath95percent = @wealthatdeath95percent,
-                        monthlyInvestBrokerage = @monthlyInvestBrokerage,
-                        xMinusAgeStockPercentPreRetirement = @xMinusAgeStockPercentPreRetirement,
-                        numYearsBondBucketInRetirement = @numYearsBondBucketInRetirement,
-                        recessionRecoveryPercent = @recessionRecoveryPercent,
-                        recessionLifestyleAdjustment = @recessionLifestyleAdjustment,
-                        retirementDate = @retirementDate,
-                        maxSpendingPercentWhenBelowRetirementLevelEquity = @maxSpendingPercentWhenBelowRetirementLevelEquity
+                        analytics = @analytics
                     where runid = @runid
                     ;
                     ";
@@ -511,65 +458,7 @@ namespace Lib.Engine.MonteCarlo
                     cmd.AddParameter(new DbCommandParameter() { ParameterName = "rundate", DbType = ParamDbType.Timestamp, Value = runDate });
                     cmd.AddParameter(new DbCommandParameter() { ParameterName = "serializedself", DbType = ParamDbType.Text, Value = serializeSelf() });
                     cmd.AddParameter(new DbCommandParameter() { ParameterName = "numberofsimstorun", DbType = ParamDbType.Integer, Value = numberOfSimsToRun });
-                    cmd.AddParameter(new DbCommandParameter() { ParameterName = "totalrunswithbankruptcy", DbType = ParamDbType.Integer, Value = totalRunsWithBankruptcy });
-                    cmd.AddParameter(new DbCommandParameter() { ParameterName = "totalrunswithoutbankruptcy", DbType = ParamDbType.Integer, Value = totalRunsWithoutBankruptcy });
-                    cmd.AddParameter(new DbCommandParameter() { ParameterName = "averageageatbankruptcy", DbType = ParamDbType.Numeric, Value = averageAgeAtBankruptcy });
-                    cmd.AddParameter(new DbCommandParameter() { ParameterName = "minageatbankruptcy", DbType = ParamDbType.Numeric, Value = minAgeAtBankruptcy });
-                    cmd.AddParameter(new DbCommandParameter() { ParameterName = "bankruptcyage90percent", DbType = ParamDbType.Numeric, Value = bankruptcyAge90Percent });
-                    cmd.AddParameter(new DbCommandParameter() { ParameterName = "bankruptcyage95percent", DbType = ParamDbType.Numeric, Value = bankruptcyAge95Percent });
-                    cmd.AddParameter(new DbCommandParameter() { ParameterName = "bankruptcyage99percent", DbType = ParamDbType.Numeric, Value = bankruptcyAge99Percent });
-                    cmd.AddParameter(new DbCommandParameter() { ParameterName = "maxageatbankruptcy", DbType = ParamDbType.Numeric, Value = maxAgeAtBankruptcy });
-                    cmd.AddParameter(new DbCommandParameter() { ParameterName = "averagenumberofrecessionsinbankruptcyruns", DbType = ParamDbType.Numeric, Value = averageNumberOfRecessionsInBankruptcyRuns });
-                    cmd.AddParameter(new DbCommandParameter() { ParameterName = "averagenumberofrecessionsinnonbankruptcyruns", DbType = ParamDbType.Numeric, Value = averageNumberOfRecessionsInNonBankruptcyRuns });
-                    cmd.AddParameter(new DbCommandParameter() { ParameterName = "averagewealthatretirement", DbType = ParamDbType.Numeric, Value = averageWealthAtRetirement });
-                    cmd.AddParameter(new DbCommandParameter() { ParameterName = "averagewealthatdeath", DbType = ParamDbType.Numeric, Value = averageWealthAtDeath });
-                    cmd.AddParameter(new DbCommandParameter() { ParameterName = "wealthatdeath90percent", DbType = ParamDbType.Numeric, Value = wealthAtDeath90Percent });
-                    cmd.AddParameter(new DbCommandParameter() { ParameterName = "wealthatdeath95percent", DbType = ParamDbType.Numeric, Value = wealthAtDeath95Percent });
-                    cmd.AddParameter(new DbCommandParameter()
-                    {
-                        ParameterName = "monthlyInvestBrokerage",
-                        DbType = ParamDbType.Numeric,
-                        Value = simParams.monthlyInvestBrokerage
-                    });
-                    cmd.AddParameter(new DbCommandParameter()
-                    {
-                        ParameterName = "xMinusAgeStockPercentPreRetirement",
-                        DbType = ParamDbType.Numeric,
-                        Value = simParams.xMinusAgeStockPercentPreRetirement
-                    });
-                    cmd.AddParameter(new DbCommandParameter()
-                    {
-                        ParameterName = "numYearsBondBucketInRetirement",
-                        DbType = ParamDbType.Numeric,
-                        Value = simParams.numYearsBondBucketInRetirement
-                    });
-                    cmd.AddParameter(new DbCommandParameter()
-                    {
-                        ParameterName = "recessionRecoveryPercent",
-                        DbType = ParamDbType.Numeric,
-                        Value = simParams.recessionRecoveryPercent
-                    });
-                    cmd.AddParameter(new DbCommandParameter()
-                    {
-                        ParameterName = "recessionLifestyleAdjustment",
-                        DbType = ParamDbType.Numeric,
-                        Value = simParams.recessionLifestyleAdjustment
-                    });
-                    cmd.AddParameter(new DbCommandParameter()
-                    {
-                        ParameterName = "retirementDate",
-                        DbType = ParamDbType.Timestamp,
-                        Value = simParams.retirementDate
-                    });
-                    cmd.AddParameter(new DbCommandParameter()
-                    {
-                        ParameterName = "maxSpendingPercentWhenBelowRetirementLevelEquity",
-                        DbType = ParamDbType.Numeric,
-                        Value = simParams.maxSpendingPercentWhenBelowRetirementLevelEquity
-                    });
-
-
-
+                    cmd.AddParameter(new DbCommandParameter() { ParameterName = "analytics", DbType = ParamDbType.Json, Value = analytics });
 
                     int numRowsAffected = PostgresDAL.executeNonQuery(cmd.npgsqlCommand);
                     if (numRowsAffected != 1)
@@ -664,7 +553,7 @@ namespace Lib.Engine.MonteCarlo
                     object result = PostgresDAL.executeScalar(cmd.npgsqlCommand);
                     string serializedMonteCarlo = Convert.ToString(result);
 
-                    
+
                     return DataSerializationHandler.DeserializeMonteCarloBatch(serializedMonteCarlo);
                 }
             }
@@ -725,5 +614,6 @@ namespace Lib.Engine.MonteCarlo
             return outList;
 
         }
+        #endregion DB Functions
     }
 }

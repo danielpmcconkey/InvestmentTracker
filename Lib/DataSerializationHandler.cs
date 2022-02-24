@@ -149,6 +149,10 @@ namespace Lib
         {
             return JsonSerializer.Serialize(batch);
         }
+        public static string SerializeType<T>(T item)
+        {
+            return JsonSerializer.Serialize<T>(item);
+        }
 
 
     }

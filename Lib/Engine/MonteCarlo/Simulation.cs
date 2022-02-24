@@ -101,6 +101,8 @@ namespace Lib.Engine.MonteCarlo
             annualInflationLow = simParams.annualInflationLow;
             annualInflationHi = simParams.annualInflationHi;
             _socialSecurityCollectionAge = simParams.socialSecurityCollectionAge;
+            _livingLargeLifestyleSpendMultiplier = simParams.livingLargeLifestyleSpendMultiplier;
+            _livingLargeThreashold = simParams.livingLargeThreashold;
 
             // set retirement date to the first day of the next month
             retirementDate = simParams.retirementDate;

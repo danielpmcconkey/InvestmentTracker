@@ -13,6 +13,33 @@ namespace Lib.Engine.MonteCarlo
 {
     public static class MonteCarloHelper
     {
+        public static void UpdateAnalytics()
+        {
+            using (var conn = PostgresDAL.getConnection())
+            {
+                string query = "select runid from montecarlobatch where analytics is null";
+
+                PostgresDAL.openConnection(conn);
+                using (DbCommand cmd = new DbCommand(query, conn))
+                {
+                    using (var reader = PostgresDAL.executeReader(cmd.npgsqlCommand))
+                    {
+                        while (reader.Read())
+                        {
+                            Guid runId = PostgresDAL.getGuid(reader, "runid");
+                            var batch = MonteCarloHelper.GetMonteCarloBatchFromDb(runId);
+                            batch.populateAnalyticsFromRunResults();
+                            batch.updateSelfInDb();
+                        }
+                    }
+                }
+            }
+
+        }
+        public static MonteCarloBatch GetMonteCarloBatchFromDb(Guid runId)
+        {
+            return MonteCarloBatch.readAndDeserializeFromDb(runId);
+        }
         public static GraphData GetMonteCarloGraphData(MonteCarloBatch monteCarloBatch)
         {
             GraphData graphData = new GraphData(
@@ -47,7 +74,7 @@ namespace Lib.Engine.MonteCarlo
                 }
                 graphData.AddSeries(graphSeries);
             }
-            graphData.AddSeries(GetMedianFromSimResults(monteCarloBatch.simRuns, 
+            graphData.AddSeries(GetMedianNetWorthGraphFromSimResults(monteCarloBatch.simRuns, 
                 monteCarloBatch.simParams.birthDate));
 
             var nintiethPercentiles = Get90PercentFromSimResults(monteCarloBatch.simRuns,
@@ -65,9 +92,9 @@ namespace Lib.Engine.MonteCarlo
 
             return graphData;
         }
-        public static void RunMonteCarloBatches(int numSeries, List<Account> accounts, PricingEngine pricingEngine)
+        public static void RunMonteCarloBatches(int numBatches, List<Account> accounts, PricingEngine pricingEngine)
         {
-            for(int i = 0; i < numSeries; i++)
+            for(int i = 0; i < numBatches; i++)
             {
                 // pull from default configs
                 var retirementDate = ConfigManager.GetDateTime("RetirementDate");
@@ -328,7 +355,7 @@ namespace Lib.Engine.MonteCarlo
             mc.runBatch();
             return mc;
         }
-        private static GraphSeries GetMedianFromSimResults(List<SimulationRunResult> simResults, DateTime birthDate)
+        private static GraphSeries GetMedianNetWorthGraphFromSimResults(List<SimulationRunResult> simResults, DateTime birthDate)
         {
             GraphSeries graphSeries = new GraphSeries();
             graphSeries.yType = TypeHelper.int64Type;

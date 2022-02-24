@@ -260,7 +260,8 @@ namespace InvestmentTrackerCLI
                 if (FEATURETOGGLE.SHOULDRUNMONTECARLOBATCHES)
                 {
                     Logger.info("Running Monte Carlo batches");
-                    MonteCarloHelper.RunMonteCarloBatches(100, accounts, pricingEngine);
+                    int numBatchesToRun = ConfigManager.GetInt("numMonteCarloBatchesToRun");
+                    MonteCarloHelper.RunMonteCarloBatches(numBatchesToRun, accounts, pricingEngine);
                     Logger.info("Finished running Monte Carlo batches");
                 }
                 if (FEATURETOGGLE.SHOULDRUNMONTECARLO)
@@ -332,18 +333,18 @@ namespace InvestmentTrackerCLI
                     sbOutput.AppendLine("</div>");
                     sbOutput.AppendLine("<div class='mcanalytics'>");
                     sbOutput.AppendLine("<h3>Monte Carlo Analytics</h3>");
-                    sbOutput.AppendLine(string.Format("<p>Average wealth at retirement: {0}</p>", mcBatch.averageWealthAtRetirement.ToString("c")));
-                    sbOutput.AppendLine(string.Format("<p>Total runs with bankruptcy: {0}</p>", mcBatch.totalRunsWithBankruptcy.ToString("#,###")));
-                    sbOutput.AppendLine(string.Format("<p>Total runs without bankruptcy: {0}</p>", mcBatch.totalRunsWithoutBankruptcy.ToString("#,###")));
-                    sbOutput.AppendLine(string.Format("<p>Average age at bankruptcy: {0}</p>", mcBatch.averageAgeAtBankruptcy.ToString("##.00")));
-                    sbOutput.AppendLine(string.Format("<p>Minimum age at bankruptcy: {0}</p>", mcBatch.minAgeAtBankruptcy.ToString("##.00")));
-                    sbOutput.AppendLine(string.Format("<p>Average total lifestyle spend: {0}</p>", mcBatch.averageLifeStyleSpend.ToString("c")));
-                    sbOutput.AppendLine(string.Format("<p>Max age at bankruptcy: {0} (oldest age of bankruptcy)</p>", mcBatch.maxAgeAtBankruptcy.ToString("##.00")));
-                    sbOutput.AppendLine(string.Format("<p>Average number of recessions in bankruptcy runs: {0}</p>", mcBatch.averageNumberOfRecessionsInBankruptcyRuns.ToString("##.00")));
-                    sbOutput.AppendLine(string.Format("<p>Average number of recessions in non-bankruptcy runs: {0}</p>", mcBatch.averageNumberOfRecessionsInNonBankruptcyRuns.ToString("##.00")));
-                    sbOutput.AppendLine(string.Format("<p>Average wealth at death: {0}</p>", mcBatch.averageWealthAtDeath.ToString("c")));
-                    sbOutput.AppendLine(string.Format("<p>Success rate in \"bad\" years: {0}%</p>", (mcBatch.successRateBadYears * 100).ToString("###.00")));
-                    sbOutput.AppendLine(string.Format("<p>Success rate in \"good\" years: {0}%</p>", (mcBatch.successRateGoodYears * 100).ToString("###.00")));
+                    sbOutput.AppendLine(string.Format("<p>Average wealth at retirement: {0}</p>", mcBatch.analytics.averageWealthAtRetirement.ToString("c")));
+                    sbOutput.AppendLine(string.Format("<p>Total runs with bankruptcy: {0}</p>", mcBatch.analytics.totalRunsWithBankruptcy.ToString("#,###")));
+                    sbOutput.AppendLine(string.Format("<p>Total runs without bankruptcy: {0}</p>", mcBatch.analytics.totalRunsWithoutBankruptcy.ToString("#,###")));
+                    sbOutput.AppendLine(string.Format("<p>Average age at bankruptcy: {0}</p>", mcBatch.analytics.averageAgeAtBankruptcy.ToString("##.00")));
+                    sbOutput.AppendLine(string.Format("<p>Minimum age at bankruptcy: {0}</p>", mcBatch.analytics.minAgeAtBankruptcy.ToString("##.00")));
+                    sbOutput.AppendLine(string.Format("<p>Average total lifestyle spend: {0}</p>", mcBatch.analytics.averageLifeStyleSpend.ToString("c")));
+                    sbOutput.AppendLine(string.Format("<p>Max age at bankruptcy: {0} (oldest age of bankruptcy)</p>", mcBatch.analytics.maxAgeAtBankruptcy.ToString("##.00")));
+                    sbOutput.AppendLine(string.Format("<p>Average number of recessions in bankruptcy runs: {0}</p>", mcBatch.analytics.averageNumberOfRecessionsInBankruptcyRuns.ToString("##.00")));
+                    sbOutput.AppendLine(string.Format("<p>Average number of recessions in non-bankruptcy runs: {0}</p>", mcBatch.analytics.averageNumberOfRecessionsInNonBankruptcyRuns.ToString("##.00")));
+                    sbOutput.AppendLine(string.Format("<p>Average wealth at death: {0}</p>", mcBatch.analytics.averageWealthAtDeath.ToString("c")));
+                    sbOutput.AppendLine(string.Format("<p>Success rate in \"bad\" years: {0}%</p>", (mcBatch.analytics.successRateBadYears * 100).ToString("###.00")));
+                    sbOutput.AppendLine(string.Format("<p>Success rate in \"good\" years: {0}%</p>", (mcBatch.analytics.successRateGoodYears * 100).ToString("###.00")));
                     sbOutput.AppendLine("</div>");
                     Logger.info("Finished running Monte Carlo simulation");
                 }
