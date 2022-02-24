@@ -15,9 +15,13 @@ namespace Lib.Engine.MonteCarlo
     {
         public static void UpdateAnalytics()
         {
+            int i = 0;
             using (var conn = PostgresDAL.getConnection())
             {
-                string query = "select runid from montecarlobatch where analytics is null";
+                string query = @"
+                select runid from montecarlobatch b where b.montecarloversion = '2022.02.23.014'
+                order by ((b.analytics->'medianLifeStyleSpend')::varchar(17)::numeric * (b.analytics->'successRateBadYears')::varchar(17)::numeric) desc
+                ";
 
                 PostgresDAL.openConnection(conn);
                 using (DbCommand cmd = new DbCommand(query, conn))
@@ -30,6 +34,8 @@ namespace Lib.Engine.MonteCarlo
                             var batch = MonteCarloHelper.GetMonteCarloBatchFromDb(runId);
                             batch.populateAnalyticsFromRunResults();
                             batch.updateSelfInDb();
+                            i++;
+                            if (i % 100 == 0) Logger.info(String.Format("Updated {0} analytics rows", i));
                         }
                     }
                 }

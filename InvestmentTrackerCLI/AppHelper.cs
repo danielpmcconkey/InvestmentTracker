@@ -113,6 +113,8 @@ namespace InvestmentTrackerCLI
 
             try
             {
+                // MonteCarloHelper.UpdateAnalytics();
+
                 List <Account> accounts = new List<Account>();
                 List<Valuation> prices = new List<Valuation>();
 

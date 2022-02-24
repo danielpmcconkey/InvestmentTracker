@@ -22,7 +22,10 @@ namespace Lib.DataTypes.Simulation
         public decimal averageWealthAtRetirement { get; set; }
         public decimal averageWealthAtDeath { get; set; }
         public decimal averageLifeStyleSpend { get; set; }
+        public decimal averageLifeStyleSpendBadYears { get; set; }
+        public decimal averageLifeStyleSpendSuccessfulBadYears { get; set; }
         public decimal medianLifeStyleSpend { get; set; }
+        public decimal bottom10PercentLifeStyleSpend { get; set; }
         public decimal wealthAtDeath90Percent { get; set; }   // best wealth at death for the worst 10% of success runs
         public decimal wealthAtDeath95Percent { get; set; }   // best wealth at death for the worst 5% of success runs
         public decimal successRateBadYears { get; set; }

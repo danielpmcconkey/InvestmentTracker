@@ -156,9 +156,9 @@ namespace Lib.Engine.MonteCarlo
         }
         private decimal GetMedianTotalLifeStyleSpend()
         {
-            return GetTotalLifeStyleSpendAtNPercentile(50);
+            return GetTotalLifeStyleSpendAtBottomNPercentile(50);
         }
-        private decimal GetTotalLifeStyleSpendAtNPercentile(int N)
+        private decimal GetTotalLifeStyleSpendAtBottomNPercentile(int N)
         {
             var orderedRuns = simRuns.OrderBy(x => x.totalLifeStyleSpend);
             int runCount = orderedRuns.Count();
@@ -173,6 +173,7 @@ namespace Lib.Engine.MonteCarlo
             analytics.totalRunsWithoutBankruptcy = successfulRuns.Count();
             analytics.averageLifeStyleSpend = simRuns.Average(x => x.totalLifeStyleSpend);
             analytics.medianLifeStyleSpend = GetMedianTotalLifeStyleSpend();
+            analytics.bottom10PercentLifeStyleSpend = GetTotalLifeStyleSpendAtBottomNPercentile(10);
             analytics.successRateOverall = analytics.totalRunsWithoutBankruptcy
                 / (analytics.totalRunsWithBankruptcy + (decimal)analytics.totalRunsWithoutBankruptcy);
 
@@ -219,6 +220,11 @@ namespace Lib.Engine.MonteCarlo
                 var goodYearBankruptcies = goodYearRuns.Where(x => x.wasSuccessful == false).Count();
                 var goodYearSuccesses = goodYearRuns.Where(x => x.wasSuccessful == true).Count();
 
+                analytics.averageLifeStyleSpendBadYears = badYearRuns.Average(x => x.totalLifeStyleSpend);
+                var successfulBadYears = badYearRuns.Where(x => x.wasSuccessful);
+                analytics.averageLifeStyleSpendSuccessfulBadYears = (successfulBadYears.Count() > 0) ?
+                    successfulBadYears.Average(y => y.totalLifeStyleSpend)
+                    : -10M;
 
                 analytics.successRateBadYears = badYearSuccesses / (decimal)(badYearSuccesses + badYearBankruptcies);
                 analytics.successRateGoodYears = goodYearSuccesses / (decimal)(goodYearSuccesses + goodYearBankruptcies);
