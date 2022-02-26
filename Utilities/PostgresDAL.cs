@@ -232,7 +232,7 @@ namespace Utilities
         }
         public static NpgsqlConnection getConnection()
         {
-            string connectionString = ConfigManager.GetString("ConnectionString");
+            string connectionString = ConfigManager.GetString("DbConnectionString");
             NpgsqlConnection conn = new NpgsqlConnection(connectionString);
             return conn;
         }

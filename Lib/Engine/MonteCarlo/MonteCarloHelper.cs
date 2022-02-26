@@ -13,6 +13,52 @@ namespace Lib.Engine.MonteCarlo
 {
     public static class MonteCarloHelper
     {
+        public static void ExtendBestRuns(string monteCarloVersion)
+        {
+            using (var conn = PostgresDAL.getConnection())
+            {
+                string query = @"
+                    SELECT 
+	                    b.runid, 
+	                    b.serializedself
+                    FROM public.montecarlobatch b
+                    where 1=1
+                    and b.montecarloversion = @monteCarloVersion
+                    and numberofsimstorun = 1000
+                    order by ((b.analytics->'averageLifeStyleSpendSuccessfulBadYears')::varchar(17)::numeric * (b.analytics->'successRateBadYears')::varchar(17)::numeric) desc
+                    limit 10
+                    ;
+
+
+                ";
+
+                PostgresDAL.openConnection(conn);
+                using (DbCommand cmd = new DbCommand(query, conn))
+                {
+                    cmd.AddParameter(new DbCommandParameter()
+                    {
+                        ParameterName = "monteCarloVersion",
+                        DbType = ParamDbType.Varchar,
+                        Value = monteCarloVersion
+                    });
+                    using (var reader = PostgresDAL.executeReader(cmd.npgsqlCommand))
+                    {
+                        while (reader.Read())
+                        {
+                            var batch = DataSerializationHandler.DeserializeMonteCarloBatch(
+                                PostgresDAL.getString(reader, "serializedself"));
+                            Guid oldId = batch.runId;
+                            batch.runId = Guid.NewGuid();   // create a new GUID for this run
+                            batch.numberOfSimsToRun = 20000;
+                            batch.runBatch();
+                            Logger.info(String.Format("Extended sim runs for {0} with {1}", oldId.ToString(), 
+                                batch.runId.ToString()));
+                        }
+                    }
+                }
+            }
+
+        }
         public static void UpdateAnalytics()
         {
             int i = 0;
@@ -269,8 +315,6 @@ namespace Lib.Engine.MonteCarlo
                 monthlyInvestBrokerage = ConfigManager.GetDecimal("monthlyInvestBrokerage"),
                 monthlyInvestHSA = ConfigManager.GetDecimal("monthlyInvestHSA"),
                 annualRSUInvestmentPreTax = ConfigManager.GetDecimal("annualRSUInvestmentPreTax"),
-                //minBondPercentPreRetirement = ConfigManager.GetDecimal("minBondPercentPreRetirement"),
-                //maxBondPercentPreRetirement = ConfigManager.GetDecimal("maxBondPercentPreRetirement"),
                 xMinusAgeStockPercentPreRetirement = ConfigManager.GetDecimal("xMinusAgeStockPercentPreRetirement"),
                 numYearsCashBucketInRetirement = ConfigManager.GetDecimal("numYearsCashBucketInRetirement"),
                 numYearsBondBucketInRetirement = ConfigManager.GetDecimal("numYearsBondBucketInRetirement"),
@@ -283,7 +327,9 @@ namespace Lib.Engine.MonteCarlo
                 annualInflationLow = ConfigManager.GetDecimal("annualInflationLow"),
                 annualInflationHi = ConfigManager.GetDecimal("annualInflationHi"),
                 socialSecurityCollectionAge = ConfigManager.GetDecimal("socialSecurityCollectionAge"),
-            };
+                livingLargeThreashold = ConfigManager.GetDecimal("livingLargeThreashold"),
+                livingLargeLifestyleSpendMultiplier = ConfigManager.GetDecimal("livingLargeLifestyleSpendMultiplier"),
+        };
             List<Asset> assetsGoingIn = new List<Asset>();
 
             DateTimeOffset today = DateTimeHelper.CreateDateFromParts(DateTime.Now.Year,

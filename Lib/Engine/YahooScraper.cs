@@ -21,7 +21,7 @@ namespace Lib.Engine
             _minTimeBetweenScrapes = ConfigManager.GetTimeSpan("MinTimeSpanBetweenYahooScrapes");
         }
         public static List<Valuation> GetHistoryPrices(
-            string symbol, DateTimeOffset beginRange, DateTimeOffset endRange)
+            string symbol, DateTimeOffset beginRange, DateTimeOffset endRange, int retries = 0)
         {
             Logger.info(string.Format("Scraping history prices for {0} from {1} to {2}.", symbol, beginRange, endRange));
             List<Valuation> prices = new List<Valuation>();
@@ -39,15 +39,15 @@ namespace Lib.Engine
             // make sure we're not blitzing Yahoo
             WaitForNecessaryCoolDown();
 
-            // scrape the page
-            HtmlWeb web = new HtmlWeb();
-            HtmlDocument doc = web.Load(url);
-
-            _lastScrapeTime = new DateTimeOffset(DateTime.Now, TimeZoneInfo.Local.BaseUtcOffset);
-
-            // grab the security name while we're here
             try
             {
+                // scrape the page
+                HtmlWeb web = new HtmlWeb();
+                HtmlDocument doc = web.Load(url);
+
+                _lastScrapeTime = new DateTimeOffset(DateTime.Now, TimeZoneInfo.Local.BaseUtcOffset);
+
+                // grab the security name while we're here
                 var h1Nodes = doc.DocumentNode.SelectNodes("//h1");
                 string securityName = h1Nodes[0].InnerText;
 
@@ -91,6 +91,11 @@ namespace Lib.Engine
             }
             catch (Exception ex)
             {
+                if(retries < ConfigManager.GetInt("dbMaxRetries"))
+                {
+                    Logger.warn("Exception thrown in YahooScraper.GetHistoryPrices. Re-trying.");
+                    GetHistoryPrices(symbol, beginRange, endRange, retries + 1);
+                }
                 Logger.fatal("Unhandled exception in YahooScraper.GetHistoryPrices. Re-throwing", ex);
                 throw;
             }

@@ -4,22 +4,63 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Configuration;
+using System.Text.Json;
 
 namespace Utilities
 {
     public static class ConfigManager
     {
         private static Dictionary<string, string> _cache;
-        
+        const string _secretsEnvVarName = "InvestmentTrackerVars";
+
+        public static void ReWriteSecrets()
+        {
+            string secretsString = Environment.GetEnvironmentVariable
+                (_secretsEnvVarName, EnvironmentVariableTarget.User);
+            var secretsDict = JsonSerializer.Deserialize<Dictionary<string, string>>(secretsString);
+            /*
+             * add your new secrets just below this comment
+             * use the format: 
+             *  secretsDict.Add("name", "value");
+            */
+            secretsDict.Add("smtpHost", "smtp.gmail.com");
+            secretsDict.Add("smtpPort", "587");
+            secretsDict.Add("smtpEnableSsl", "true");
+            secretsDict.Add("smtpFromAddress", "dmcconkey.frankie@gmail.com");
+            secretsDict.Add("smtpDisplayFrom", "McDuck app");
+            secretsDict.Add("smtpToAddress", "danielpmcconkey@gmail.com");
+            secretsDict.Add("smtpDisplayTo", "Dan McConkey");
+            secretsDict.Add("smtpFromPw", "sysFrankie");
+            /*
+             * MAKE DAMN SURE YOU REMOVE IT BEFORE COMMITTING
+             * 
+             * 
+             * */
+
+            string secretsJson = JsonSerializer.Serialize(secretsDict);
+            Environment.SetEnvironmentVariable(_secretsEnvVarName, secretsJson, EnvironmentVariableTarget.User);
+        }
+
         private static void ReadAllConfig()
         {
             _cache = new Dictionary<string, string>();
-                var appSettings = ConfigurationManager.AppSettings;
+            var appSettings = ConfigurationManager.AppSettings;
 
             foreach (var key in appSettings.AllKeys)
             {
                 _cache.Add(key, appSettings[key]);
             }
+
+            // read the secrets into cache, too
+            string secretsString = Environment.GetEnvironmentVariable
+                (_secretsEnvVarName, EnvironmentVariableTarget.User);
+            Dictionary<string, string> secretsDict = JsonSerializer
+                .Deserialize<Dictionary<string, string>>(secretsString);
+            foreach (var secret in secretsDict)
+            {
+                _cache.Add(secret.Key, secret.Value);
+            }
+
         }
         public static string GetString(string key)
         {

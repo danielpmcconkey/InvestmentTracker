@@ -17,9 +17,6 @@ namespace InvestmentTrackerCLI
 {
     internal static class AppHelper
     {
-        // <add key="ConnectionString" value="Host=localhost;Username=mcduck_app_dev;Password='R#x8QA4tGV?zB^|h';Database=HouseholdBudget;Timeout=15;Command Timeout=300;" />
-       
-
 
         // https://color.adobe.com/create/color-wheel
 
@@ -113,8 +110,6 @@ namespace InvestmentTrackerCLI
 
             try
             {
-                // MonteCarloHelper.UpdateAnalytics();
-
                 List <Account> accounts = new List<Account>();
                 List<Valuation> prices = new List<Valuation>();
 
@@ -259,13 +254,6 @@ namespace InvestmentTrackerCLI
                     //Logger.info(Environment.NewLine + svg.xml + Environment.NewLine);
                     Logger.info("Finished printing net worth");
                 }
-                if (FEATURETOGGLE.SHOULDRUNMONTECARLOBATCHES)
-                {
-                    Logger.info("Running Monte Carlo batches");
-                    int numBatchesToRun = ConfigManager.GetInt("numMonteCarloBatchesToRun");
-                    MonteCarloHelper.RunMonteCarloBatches(numBatchesToRun, accounts, pricingEngine);
-                    Logger.info("Finished running Monte Carlo batches");
-                }
                 if (FEATURETOGGLE.SHOULDRUNMONTECARLO)
                 {
                     Logger.info("Running Monte Carlo simulation");
@@ -349,6 +337,16 @@ namespace InvestmentTrackerCLI
                     sbOutput.AppendLine(string.Format("<p>Success rate in \"good\" years: {0}%</p>", (mcBatch.analytics.successRateGoodYears * 100).ToString("###.00")));
                     sbOutput.AppendLine("</div>");
                     Logger.info("Finished running Monte Carlo simulation");
+                }
+                if (FEATURETOGGLE.SHOULDRUNMONTECARLOBATCHES)
+                {
+                    Logger.info("Running Monte Carlo batches");
+                    int numBatchesToRun = ConfigManager.GetInt("numMonteCarloBatchesToRun");
+                    MonteCarloHelper.RunMonteCarloBatches(numBatchesToRun, accounts, pricingEngine);
+                    Logger.info("Finished running Monte Carlo batches");
+                    Logger.info("Extending best Monte Carlo batches");
+                    MonteCarloHelper.ExtendBestRuns("2022.02.23.014");
+                    Logger.info("Finished extending best Monte Carlo batches");
                 }
                 WriteHTMLFile(sbOutput, captionWidth);
 

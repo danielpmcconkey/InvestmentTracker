@@ -422,7 +422,7 @@ namespace Lib.Engine.MonteCarlo
             simulationRunResult.wealthAtDeath = 0;
             simulationRunResult.ageAtBankruptcy = (decimal)((simulationRunDate - birthDate).TotalDays / 365.25);
 
-            string burp = _logicTrace;
+            //string burp = _logicTrace;
         }
         /// <summary>
         /// pull from a specific asset and add to cash on hand
@@ -980,6 +980,9 @@ namespace Lib.Engine.MonteCarlo
         }
         private void logicTrace(string method, string message)
         {
+            if (!FEATURETOGGLE.SHOULDDEBUGSIMLOGIC)
+                return;
+            
             string simDate = simulationRunDate.ToShortDateString();
             long yearlySpend = (monthlySpendCoreToday + monthlySpendLifeStyleToday) * 12;
             long targetCashAmount = Convert.ToInt64(Math.Round(numYearsCashBucketInRetirement * yearlySpend));

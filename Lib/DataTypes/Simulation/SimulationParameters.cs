@@ -37,7 +37,7 @@ namespace Lib.DataTypes.Simulation
         public decimal annualInflationLow { get; set; }// = 0.01m;
         public decimal annualInflationHi { get; set; }// = 0.075m;
         public decimal socialSecurityCollectionAge { get; set; }
-        public decimal livingLargeThreashold { get; set; }  // if your total equities are greater that retirement level * this value, start living large
+        public decimal livingLargeThreashold { get; set; } // if your total equities are greater that retirement level * this value, start living large
         public decimal livingLargeLifestyleSpendMultiplier { get; set; }
 
 
