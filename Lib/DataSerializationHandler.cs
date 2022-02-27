@@ -72,6 +72,7 @@ namespace Lib
             string accountsPath = Path.Combine(_dataDirectory,
                 ConfigManager.GetString("JsonAccountsFileName"));
 
+            Logger.info(string.Format("Extraction path: {0}", accountsPath));
             string jsonString = File.ReadAllText(accountsPath);
             List<Account> accounts = JsonSerializer.Deserialize<List<Account>>(jsonString);
             

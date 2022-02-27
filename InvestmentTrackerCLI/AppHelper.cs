@@ -37,9 +37,9 @@ namespace InvestmentTrackerCLI
             printAssemblyInfo();
             foreach (string arg in args)
             {
-                if(arg.ToLower() == "shouldreadinitalcsvdata:true")
+                if (arg.ToLower() == "shouldreadinitalcsvdata:true")
                 {
-                    FEATURETOGGLE.SHOULDREADINITALCSVDATA = true;
+                    FEATURETOGGLE.SHOULDREADINITALCSVDATA = false;
                     
                 }
                 if (arg.ToLower() == "shouldreadinitalcsvdata:false")
@@ -107,6 +107,8 @@ namespace InvestmentTrackerCLI
         internal static void Run()
         {
             Logger.info("Beginning run.");
+
+            
 
             try
             {

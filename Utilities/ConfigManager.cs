@@ -23,14 +23,7 @@ namespace Utilities
              * use the format: 
              *  secretsDict.Add("name", "value");
             */
-            secretsDict.Add("smtpHost", "smtp.gmail.com");
-            secretsDict.Add("smtpPort", "587");
-            secretsDict.Add("smtpEnableSsl", "true");
-            secretsDict.Add("smtpFromAddress", "dmcconkey.frankie@gmail.com");
-            secretsDict.Add("smtpDisplayFrom", "McDuck app");
-            secretsDict.Add("smtpToAddress", "danielpmcconkey@gmail.com");
-            secretsDict.Add("smtpDisplayTo", "Dan McConkey");
-            secretsDict.Add("smtpFromPw", "sysFrankie");
+            
             /*
              * MAKE DAMN SURE YOU REMOVE IT BEFORE COMMITTING
              * 

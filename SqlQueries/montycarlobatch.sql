@@ -59,11 +59,3 @@ and numberofsimstorun > 1000
 order by ((b.analytics->'averageLifeStyleSpendSuccessfulBadYears')::varchar(17)::numeric * (b.analytics->'successRateBadYears')::varchar(17)::numeric) desc
 limit 100
 ;
-
-/*
-alter table public.montecarlobatch
-add column medianlifestylespend numeric(14,2);
-
-delete from montecarlobatch
-where runid = 'c5735ff4-08df-4e8c-aafa-c47886e41012'
-*/
