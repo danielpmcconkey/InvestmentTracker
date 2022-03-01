@@ -38,12 +38,8 @@ namespace Lib.Engine
                         if (!IsPriceAtDate(transaction.InvestmentVehicle.Symbol, transaction.Date))
                         {
                             // price doesn't already exist. add this one
-                            Valuation valuation = new Valuation()
-                            {
-                                Date = transaction.Date,
-                                InvestmentVehicle = transaction.InvestmentVehicle,
-                                Price = Math.Round(transaction.CashPriceTotalTransaction / transaction.Quantity, 4)
-                            };
+                            Valuation valuation = new Valuation(transaction.InvestmentVehicle, transaction.Date,
+                                Math.Round(transaction.CashPriceTotalTransaction / transaction.Quantity, 4));
                             _valuations.Add(valuation);
                         }
                     }
@@ -55,27 +51,12 @@ namespace Lib.Engine
         {
             // now go through each security and fill in the blanks with trend lines
             // get a list of distinct securities from the prices list
-            List<InvestmentVehicle> vehiclesToCheck = new List<InvestmentVehicle>();
-
-            // get unique symbols for publicly traded
-            var symbols = _valuations.Where(t => t.InvestmentVehicle.Type == InvestmentVehicleType.PUBLICLY_TRADED)
-                .Select(x => x.InvestmentVehicle.Symbol).Distinct().ToList();
-            foreach (var symbol in symbols) vehiclesToCheck.Add(new InvestmentVehicle(symbol, symbol));
             
-            // get unique names for private assets
-            var names = _valuations.Where(t => t.InvestmentVehicle.Type == InvestmentVehicleType.PRIVATELY_HELD)
-                .Select(x => x.InvestmentVehicle.Name).Distinct().ToList();
-            foreach (var name in names) vehiclesToCheck.Add(new InvestmentVehicle(name));
 
-            // add SPY for comparison
-            if(!symbols.Contains("SPY"))
+
+            foreach (var kvp in InvestmentVehiclesList.investmentVehicles)
             {
-                vehiclesToCheck.Add(new InvestmentVehicle("SPDR S&P 500 ETF Trust", "SPY"));
-            }
-
-
-            foreach (var vehicle in vehiclesToCheck)
-            {
+                var vehicle = kvp.Value;
                 var pricesForSymbol = _valuations.Where(x => 
                     (x.InvestmentVehicle.Type == InvestmentVehicleType.PRIVATELY_HELD 
                     && vehicle.Type == InvestmentVehicleType.PRIVATELY_HELD
@@ -119,12 +100,8 @@ namespace Lib.Engine
                                 // new price = first price + (slope * how many days since first price)
                                 decimal numDays = (decimal)((thisDateToFillIn - thisPrice.Date).TotalDays);
                                 decimal newPrice = thisPrice.Price + (slope * numDays);
-                                Valuation valuation = new Valuation()
-                                {
-                                    Price = newPrice,
-                                    Date = thisDateToFillIn,
-                                    InvestmentVehicle = thisPrice.InvestmentVehicle,
-                                };
+                                Valuation valuation = new Valuation(thisPrice.InvestmentVehicle,
+                                    thisDateToFillIn, newPrice);
                                 _valuations.Add(valuation);
                             }
 
@@ -158,7 +135,9 @@ namespace Lib.Engine
                 var minDate = transactions.Min(t => t.Date);
                 var maxDate = transactions.Max(t => t.Date);
                 list.Add(new InvestmentDuration(
-                    new InvestmentVehicle("SPDR S&P 500 ETF Trust", "SPY"), 
+                    InvestmentVehiclesList.investmentVehicles.Where(x =>
+                            x.Value.Type == InvestmentVehicleType.PUBLICLY_TRADED
+                            && x.Value.Symbol == "SPY").FirstOrDefault().Value, 
                     minDate, maxDate));
             }
 
@@ -233,12 +212,7 @@ namespace Lib.Engine
             {
                 Logger.warn(string.Format("Price not found for {0}/{2} at {1}", vehicle.Symbol, dateTime, vehicle.Name));
             }
-            return new Valuation()
-            {
-                Date = dateTime,
-                InvestmentVehicle = vehicle,
-                Price = 0
-            };
+            return new Valuation();
 
         }
         public List<InvestmentDuration> GetPrivateInvestmentDurationsFromAccounts(List<Account> accounts)
@@ -258,7 +232,9 @@ namespace Lib.Engine
                     );
                 var minDate = transactionsForName.Min(x => x.Date);
                 var maxDate = transactionsForName.Max(x => x.Date);
-                InvestmentVehicle vehicle = new InvestmentVehicle(name);
+                InvestmentVehicle vehicle = InvestmentVehiclesList.investmentVehicles.Where(x => 
+                    x.Value.Type == InvestmentVehicleType.PRIVATELY_HELD
+                    && x.Value.Name == name).First().Value;
 
                 returnList.Add(new InvestmentDuration(vehicle, minDate, maxDate));
             }
@@ -279,7 +255,9 @@ namespace Lib.Engine
                 var transactionsForSymbol = etfTransactions.Where(x => x.InvestmentVehicle.Symbol == symbol);
                 var minDate = transactionsForSymbol.Min(x => x.Date);
                 var maxDate = transactionsForSymbol.Max(x => x.Date);
-                InvestmentVehicle vehicle = new InvestmentVehicle(symbol, symbol);
+                InvestmentVehicle vehicle = InvestmentVehiclesList.investmentVehicles.Where(x =>
+                            x.Value.Type == InvestmentVehicleType.PUBLICLY_TRADED
+                            && x.Value.Symbol == symbol).FirstOrDefault().Value;
 
                 returnList.Add(new InvestmentDuration(vehicle, minDate, maxDate));
             }

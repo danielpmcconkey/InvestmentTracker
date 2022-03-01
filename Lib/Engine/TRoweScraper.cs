@@ -57,7 +57,16 @@ namespace Lib.Engine
                             Decimal price = csv.GetField<decimal>("Price", _moneyConverter);
                             string symbol = _symbolReference[investment];
 
-                            var vehicle = new InvestmentVehicle(investment, symbol);
+                            var matchingVehicles = InvestmentVehiclesList.investmentVehicles.Where(x =>
+                                x.Value.Type == InvestmentVehicleType.PUBLICLY_TRADED
+                                && x.Value.Symbol == symbol);
+                            InvestmentVehicle vehicle = new InvestmentVehicle(investment, symbol);
+                            if (matchingVehicles.Count() > 0) vehicle = matchingVehicles.FirstOrDefault().Value;
+                            else
+                            {
+                                InvestmentVehiclesList.investmentVehicles.Add(vehicle.Id, vehicle);
+                            }
+
                             TransactionType tType = (activityType == "Fee") ?
                                 TransactionType.SALE : TransactionType.PURCHASE;
 
@@ -73,15 +82,9 @@ namespace Lib.Engine
                                  && t.Quantity == absQty)
                                 .Count() == 0)
                             {
-
-                                account.Transactions.Add(new Transaction()
-                                {
-                                    TransactionType = tType,
-                                    InvestmentVehicle = vehicle,
-                                    Date = date,
-                                    CashPriceTotalTransaction = absCash,
-                                    Quantity = absQty,
-                                });
+                                Transaction t = new Transaction(tType, vehicle, date, absCash, absQty);
+                                account.Transactions.Add(t);
+                                DataAccessLayer.WriteNewTransactionToDb(t, account.Id);
                             }
                         }
                     }

@@ -385,6 +385,18 @@ namespace Utilities
             }
             return 0;
         }
+        public static T getEnum<T>(NpgsqlDataReader reader, string fieldName)
+        {
+            if (!reader.IsDBNull(reader.GetOrdinal(fieldName)))
+            {
+                int numberIndex = reader.GetInt32(reader.GetOrdinal(fieldName));
+                T enumVal = (T)Enum.ToObject(typeof(T), numberIndex);
+                return enumVal;
+            }
+            Logger.warn(string.Format("getEnum for type {1}. Value for {0} was null in DB. Using default of 0",
+                fieldName, typeof(T).ToString()));
+            return (T)Enum.ToObject(typeof(T), 0); ;
+        }
         public static Guid getGuid(NpgsqlDataReader reader, string fieldName)
         {
             if (!reader.IsDBNull(reader.GetOrdinal(fieldName)))

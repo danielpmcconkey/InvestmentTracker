@@ -55,7 +55,10 @@ namespace Lib.Engine
             }
 
                 // set up an SPY investment vehicle for use in adding prices
-                InvestmentVehicle spyV = new InvestmentVehicle("SPDR S&P 500 ETF Trust", "SPY");
+                InvestmentVehicle spyV = InvestmentVehiclesList.investmentVehicles.Where(x =>
+                            x.Value.Type == InvestmentVehicleType.PUBLICLY_TRADED
+                            && x.Value.Symbol == "SPY").FirstOrDefault().Value;
+
 
             // get the min date of all transactions
             DateTimeOffset minDate = accounts
@@ -143,7 +146,9 @@ namespace Lib.Engine
                 foreach (var p in positions)
                 {
                     decimal price = pricingEngine.GetPriceAtDate(
-                        new InvestmentVehicle(p.Key, p.Key), thisDate).Price;
+                        InvestmentVehiclesList.investmentVehicles.Where(x =>
+                            x.Value.Type == InvestmentVehicleType.PUBLICLY_TRADED
+                            && x.Value.Symbol == p.Key).FirstOrDefault().Value, thisDate).Price;
                     decimal totalValue = price * p.Value;
                     if (p.Key == "SPY") totalSpyWorthToday += totalValue;
                     else totalOtherWorthToday += totalValue;

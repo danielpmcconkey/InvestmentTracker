@@ -31,12 +31,15 @@ namespace Lib.Engine
                     string zestimate = allH3s[0].Text;
                     
 
-                    Valuation valToday = new Valuation();
-                    valToday.InvestmentVehicle = new InvestmentVehicle("Primary residence");
-                    valToday.Price = Decimal.Parse(zestimate.Replace('$', ' ').Trim());
-                    valToday.Date = new DateTimeOffset(
-                        DateTime.SpecifyKind(DateTime.Now.Date, DateTimeKind.Utc),
-                        new TimeSpan(0, 0, 0));
+                    Valuation valToday = new Valuation(
+                        InvestmentVehiclesList.investmentVehicles.Where(x =>
+                            x.Value.Type == InvestmentVehicleType.PRIVATELY_HELD
+                            && x.Value.Name == "Primary residence").FirstOrDefault().Value,
+                        new DateTimeOffset(
+                            DateTime.SpecifyKind(DateTime.Now.Date, DateTimeKind.Utc),
+                            new TimeSpan(0, 0, 0)),
+                        Decimal.Parse(zestimate.Replace('$', ' ').Trim())
+                        );
 
                     driver.Close();
 

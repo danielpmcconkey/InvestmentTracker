@@ -48,8 +48,17 @@ namespace Lib.Engine
                         string fundName = (symbol == "VSMAX") ?
                             "Vanguard Small-Cap Index Fund Admiral Shares" : symbol;
 
-                        TransactionType tType = TransactionType.PURCHASE; 
-                        var vehicle = new InvestmentVehicle(fundName, symbol);
+                        TransactionType tType = TransactionType.PURCHASE;
+
+                        var matchingVehicles = InvestmentVehiclesList.investmentVehicles.Where(x =>
+                                x.Value.Type == InvestmentVehicleType.PUBLICLY_TRADED
+                                && x.Value.Symbol == symbol);
+                        InvestmentVehicle vehicle = new InvestmentVehicle(fundName, symbol);
+                        if (matchingVehicles.Count() > 0) vehicle = matchingVehicles.FirstOrDefault().Value;
+                        else
+                        {
+                            InvestmentVehiclesList.investmentVehicles.Add(vehicle.Id, vehicle);
+                        }
 
                         var absCash = Math.Abs(cashAmount);
                         var absQty = Math.Abs(quantity);
@@ -63,15 +72,9 @@ namespace Lib.Engine
                                 && t.Quantity == absQty)
                             .Count() == 0)
                         {
-
-                            account.Transactions.Add(new Transaction()
-                            {
-                                TransactionType = tType,
-                                InvestmentVehicle = vehicle,
-                                Date = date,
-                                CashPriceTotalTransaction = absCash,
-                                Quantity = absQty,
-                            });
+                            Transaction t = new Transaction(tType, vehicle, date, absCash, absQty);
+                            account.Transactions.Add(t);
+                            DataAccessLayer.WriteNewTransactionToDb(t, account.Id);
                         }
                         
                     }

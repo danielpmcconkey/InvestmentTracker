@@ -46,7 +46,17 @@ namespace Lib.Engine
                         {
                             Decimal cashAmount = csv.GetField<decimal>("Amount ($)");
                             string securityDescription = csv.GetField<string>("Security Description").Trim();
-                            var vehicle = new InvestmentVehicle(securityDescription, symbol);
+
+                            var matchingVehicles = InvestmentVehiclesList.investmentVehicles.Where(x =>
+                                x.Value.Type == InvestmentVehicleType.PUBLICLY_TRADED
+                                && x.Value.Symbol == symbol);
+                            InvestmentVehicle vehicle = new InvestmentVehicle(securityDescription, symbol);
+                            if (matchingVehicles.Count() > 0) vehicle = matchingVehicles.FirstOrDefault().Value;
+                            else
+                            {
+                                InvestmentVehiclesList.investmentVehicles.Add(vehicle.Id, vehicle);
+                            } 
+
                             TransactionType tType = (cashAmount > 0) ? TransactionType.SALE : TransactionType.PURCHASE;
 
                             // sometimes the quantity is missing, like on dividends
@@ -83,14 +93,9 @@ namespace Lib.Engine
                                 .Count() == 0)
                             {
 
-                                account.Transactions.Add(new Transaction()
-                                {
-                                    TransactionType = tType,
-                                    InvestmentVehicle = vehicle,
-                                    Date = date,
-                                    CashPriceTotalTransaction = absCash,
-                                    Quantity = absQty,
-                                });
+                                Transaction t = new Transaction(tType, vehicle, date, absCash, absQty);
+                                account.Transactions.Add(t);
+                                DataAccessLayer.WriteNewTransactionToDb(t, account.Id);
                             }
                         }
                     }

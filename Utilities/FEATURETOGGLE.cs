@@ -13,15 +13,12 @@ namespace Utilities
         public static bool MULTITHREAD = true;
         public static bool SHOULDDEBUGSIMLOGIC = false;
 
-        /// <summary>
-        /// pull account and transactions from CSV. Should only need this first time you run it. Subsequent runs should pull from JSON files
-        /// </summary>
-        public static bool SHOULDREADINITALCSVDATA = false;
+        
 
         /// <summary>
         /// whether to update the JSON files with teh result of the run. Should be true every run unless you're doing something interesting
         /// </summary>
-        public static bool SHOULDWRITEJSONDATA = true;
+        //public static bool SHOULDWRITEJSONDATA = true;
 
         /// <summary>
         /// whether to pull accounts from JSON files. Should be true every run unless you're doing something interesting

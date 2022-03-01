@@ -8,7 +8,7 @@ namespace Lib.DataTypes
 {
     public enum TransactionType
     {
-        PURCHASE,
-        SALE,
+        PURCHASE = 0,
+        SALE = 1,
     }
 }

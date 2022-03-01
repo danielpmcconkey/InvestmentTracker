@@ -37,23 +37,8 @@ namespace InvestmentTrackerCLI
             printAssemblyInfo();
             foreach (string arg in args)
             {
-                if (arg.ToLower() == "shouldreadinitalcsvdata:true")
-                {
-                    FEATURETOGGLE.SHOULDREADINITALCSVDATA = false;
-                    
-                }
-                if (arg.ToLower() == "shouldreadinitalcsvdata:false")
-                {
-                    FEATURETOGGLE.SHOULDREADINITALCSVDATA = false;
-                }
-                if (arg.ToLower() == "shouldwritejsondata:true")
-                {
-                    FEATURETOGGLE.SHOULDWRITEJSONDATA = true;
-                }
-                if (arg.ToLower() == "shouldwritejsondata:false")
-                {
-                    FEATURETOGGLE.SHOULDWRITEJSONDATA = false;
-                }
+                
+                
                 if (arg.ToLower() == "shouldreadjsonaccountdata:true")
                 {
                     FEATURETOGGLE.SHOULDREADJSONACCOUNTDATA = true;
@@ -96,51 +81,69 @@ namespace InvestmentTrackerCLI
                 }
             }
             Logger.info("Feature toggles:");
-            Logger.info(string.Format("     _shouldReadInitalCSVData set to {0}", FEATURETOGGLE.SHOULDREADINITALCSVDATA));
-            Logger.info(string.Format("     _shouldWriteJSONData set to {0}", FEATURETOGGLE.SHOULDWRITEJSONDATA));
             Logger.info(string.Format("     _shouldReadJSONAccountData set to {0}", FEATURETOGGLE.SHOULDREADJSONACCOUNTDATA));
             Logger.info(string.Format("     _shouldReadJSONPricingData set to {0}", FEATURETOGGLE.SHOULDREADJSONPRICINGDATA));
             Logger.info(string.Format("     _shouldCatchUpPricingData set to {0}", FEATURETOGGLE.SHOULDCATCHUPPRICINGDATA));
             Logger.info(string.Format("     _shouldBlendPricingData set to {0}", FEATURETOGGLE.SHOULDBLENDPRICINGDATA));
             Logger.info(string.Format("     _shouldPrintNetWorth set to {0}", FEATURETOGGLE.SHOULDPRINTNETWORTH));
         }
+        private static void LoadAccoutsToDB(List<Account> accounts)
+        {
+            List<InvestmentVehicle> vehicles = new List<InvestmentVehicle>();
+            var trans = accounts.SelectMany(a => a.Transactions).ToList();
+            foreach(var tran in trans)
+            {
+                bool isnew = true;
+                foreach(var vehicle in vehicles)
+                {
+                    if(vehicle.Equals(tran.InvestmentVehicle))
+                    {
+                        isnew = false;
+                        if(vehicle.Name != tran.InvestmentVehicle.Name 
+                            && vehicle.Name == vehicle.Symbol)
+                        {
+                            vehicle.Name = tran.InvestmentVehicle.Name;
+                        }
+                        tran.InvestmentVehicle = vehicle;
+                    }
+                }
+                if(isnew)
+                {
+                    tran.InvestmentVehicle.Id = Guid.NewGuid();
+                    vehicles.Add(tran.InvestmentVehicle);
+                }
+            }
+            foreach(var vehicle in vehicles)
+            {
+                DataAccessLayer.WriteNewInvestMentVehicleToDb(vehicle);
+            }
+            // add accounts to DB
+            foreach(Account account in accounts)
+            {
+                account.Id = Guid.NewGuid();
+                foreach(var t in account.Transactions)
+                {
+                    t.Id = Guid.NewGuid();
+                }
+                DataAccessLayer.WriteNewAccountToDb(account);
+            }
+        }
         internal static void Run()
         {
             Logger.info("Beginning run.");
 
+            //ConfigManager.ReWriteSecrets(); 
             
 
             try
             {
-                List <Account> accounts = new List<Account>();
-                List<Valuation> prices = new List<Valuation>();
 
-                
+                InvestmentVehiclesList.investmentVehicles = DataAccessLayer.ReadInvestmentVehiclesFromDb();
+                List<Account> accounts = DataAccessLayer.ReadAccountsFromDb();
+                List<Valuation> prices = DataAccessLayer.ReadValuationsFromDb();
 
-                if (FEATURETOGGLE.SHOULDREADINITALCSVDATA)
-                {
-                    Logger.info("Reading CSV accounts");
-                    List<Account> initialAccounts = DataSerializationHandler.ReadInitialAccountsCSV();
-                    Logger.info("Finished reading CSV accounts");
-                    Logger.info("Reading CSV transactions");
-                    initialAccounts = DataSerializationHandler.AddInitialTransactionsCSVToAccounts(initialAccounts);
-                    Logger.info("Finished reading CSV transactions");
-                    
-                    // add the CSV accounts to the accounts list
-                    accounts.AddRange(initialAccounts);
-                }
-                if (FEATURETOGGLE.SHOULDREADJSONACCOUNTDATA)
-                {
-                    Logger.info("De-serializing account and transaction data");
-                    accounts.AddRange(DataSerializationHandler.DeSerializeAccountsData());
-                    Logger.info("Finished de-serializing account and transaction data");
-                }
-                if (FEATURETOGGLE.SHOULDREADJSONPRICINGDATA)
-                {
-                    Logger.info("De-serializing pricing data");
-                    prices.AddRange(DataSerializationHandler.DeSerializePricingData());
-                    Logger.info("Finished de-serializing pricing data");
-                }
+
+
                 // create a pricing engine for use in further operations                 
                 PricingEngine pricingEngine = new PricingEngine(prices);
                 if (FEATURETOGGLE.SHOULDREADJSONACCOUNTDATA)
@@ -184,13 +187,13 @@ namespace InvestmentTrackerCLI
                         pricingEngine.PrintPrices();
                     }
                 }
-                if (FEATURETOGGLE.SHOULDWRITEJSONDATA)
-                {
-                    // serialize data back to files
-                    Logger.info("Serializing data back to files");
-                    DataSerializationHandler.SerializeData(accounts, prices);
-                    Logger.info("Finished serializing data to files");
-                }
+                //if (FEATURETOGGLE.SHOULDWRITEJSONDATA)
+                //{
+                //    // serialize data back to files
+                //    Logger.info("Serializing data back to files");
+                //    DataAccessLayer.SerializeData(accounts, prices);
+                //    Logger.info("Finished serializing data to files");
+                //}
                 StringBuilder sbOutput = new StringBuilder();
                 double captionWidth = 0;
 

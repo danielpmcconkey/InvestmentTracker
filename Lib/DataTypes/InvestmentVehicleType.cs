@@ -8,7 +8,7 @@ namespace Lib.DataTypes
 {
     public enum InvestmentVehicleType
     {
-        PUBLICLY_TRADED,
-        PRIVATELY_HELD
+        PUBLICLY_TRADED = 0,
+        PRIVATELY_HELD = 1
     }
 }

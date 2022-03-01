@@ -15,82 +15,34 @@ namespace Lib.Engine.MonteCarlo
     {
         public static void ExtendBestRuns(string monteCarloVersion)
         {
-            using (var conn = PostgresDAL.getConnection())
-            {
-                string query = @"
-                    SELECT 
-	                    b.runid, 
-	                    b.serializedself
-                    FROM public.montecarlobatch b
-                    where 1=1
-                    and b.montecarloversion = @monteCarloVersion
-                    and numberofsimstorun = 1000
-                    order by ((b.analytics->'averageLifeStyleSpendSuccessfulBadYears')::varchar(17)::numeric * (b.analytics->'successRateBadYears')::varchar(17)::numeric) desc
-                    limit 10
-                    ;
-
-
-                ";
-
-                PostgresDAL.openConnection(conn);
-                using (DbCommand cmd = new DbCommand(query, conn))
-                {
-                    cmd.AddParameter(new DbCommandParameter()
-                    {
-                        ParameterName = "monteCarloVersion",
-                        DbType = ParamDbType.Varchar,
-                        Value = monteCarloVersion
-                    });
-                    using (var reader = PostgresDAL.executeReader(cmd.npgsqlCommand))
-                    {
-                        while (reader.Read())
-                        {
-                            var batch = DataSerializationHandler.DeserializeMonteCarloBatch(
-                                PostgresDAL.getString(reader, "serializedself"));
-                            Guid oldId = batch.runId;
-                            batch.runId = Guid.NewGuid();   // create a new GUID for this run
-                            batch.numberOfSimsToRun = 20000;
-                            batch.runBatch();
-                            Logger.info(String.Format("Extended sim runs for {0} with {1}", oldId.ToString(), 
-                                batch.runId.ToString()));
-                        }
-                    }
-                }
+            var batches = DataAccessLayer.getTopNRunsWithRunCountLessThanY(10, 1100, monteCarloVersion);
+            foreach(var batch in batches)
+            { 
+                Guid oldId = batch.Item1;
+                batch.Item2.runId = Guid.NewGuid();   // create a new GUID for this run
+                batch.Item2.numberOfSimsToRun = 20000;
+                batch.Item2.runBatch();
+                Logger.info(String.Format("Extended sim runs for {0} with {1}", oldId.ToString(), 
+                    batch.Item2.runId.ToString()));                        
             }
 
         }
         public static void UpdateAnalytics()
         {
-            int i = 0;
-            using (var conn = PostgresDAL.getConnection())
+            List<Guid> guids = DataAccessLayer.GetAllRunIdsForMCVersion("2022.02.23.014");
+            for(int i = 0; i < guids.Count; i++)
             {
-                string query = @"
-                select runid from montecarlobatch b where b.montecarloversion = '2022.02.23.014'
-                order by ((b.analytics->'medianLifeStyleSpend')::varchar(17)::numeric * (b.analytics->'successRateBadYears')::varchar(17)::numeric) desc
-                ";
-
-                PostgresDAL.openConnection(conn);
-                using (DbCommand cmd = new DbCommand(query, conn))
-                {
-                    using (var reader = PostgresDAL.executeReader(cmd.npgsqlCommand))
-                    {
-                        while (reader.Read())
-                        {
-                            Guid runId = PostgresDAL.getGuid(reader, "runid");
-                            var batch = MonteCarloHelper.GetMonteCarloBatchFromDb(runId);
-                            batch.populateAnalyticsFromRunResults();
-                            batch.updateSelfInDb();
-                            i++;
-                            if (i % 100 == 0) Logger.info(String.Format("Updated {0} analytics rows", i));
-                        }
-                    }
-                }
+                var batch = MonteCarloHelper.GetMonteCarloBatchFromDb(guids[i]);
+                batch.populateAnalyticsFromRunResults();
+                DataAccessLayer.updateMonteCarloBatchInDb(batch);
+                i++;
+                if (i % 100 == 0) Logger.info(String.Format("Updated {0} analytics rows", i));
             }
 
         }
         public static MonteCarloBatch GetMonteCarloBatchFromDb(Guid runId)
         {
-            return MonteCarloBatch.readAndDeserializeFromDb(runId);
+            return DataAccessLayer.readAndDeserializeMCBatchFromDb(runId);
         }
         public static GraphData GetMonteCarloGraphData(MonteCarloBatch monteCarloBatch)
         {

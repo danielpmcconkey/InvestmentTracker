@@ -7,8 +7,13 @@ using System.Threading.Tasks;
 
 namespace Lib.DataTypes
 {
+    public static class InvestmentVehiclesList
+    {
+        public static Dictionary<Guid, InvestmentVehicle> investmentVehicles { get; set; }
+    }
     public class InvestmentVehicle : IEquatable<InvestmentVehicle>
     {
+        public Guid Id { get; set; }
         public string Name { get; set; }
         public InvestmentVehicleType Type { get; set; }
         public string Symbol { get; set; } // only used if type is publicly traded
@@ -18,16 +23,25 @@ namespace Lib.DataTypes
             Name = name;
             Type = InvestmentVehicleType.PRIVATELY_HELD;
             Symbol = "N/A";
+            Id = Guid.NewGuid();
+
+            // write it to the DB
+            DataAccessLayer.WriteNewInvestMentVehicleToDb(this);
         }
         public InvestmentVehicle(string name, string symbol)
         {
             Name = name;
             Symbol = symbol;
             Type = InvestmentVehicleType.PUBLICLY_TRADED;
+            Id = Guid.NewGuid();
+
+            // write it to the DB
+            DataAccessLayer.WriteNewInvestMentVehicleToDb(this);
         }
         [JsonConstructor]
-        public InvestmentVehicle(string name, string symbol, InvestmentVehicleType type)
+        public InvestmentVehicle(Guid id, string name, string symbol, InvestmentVehicleType type)
         {
+            Id = id; ;
             Name = name;
             Symbol = symbol;
             Type = type;
@@ -40,7 +54,7 @@ namespace Lib.DataTypes
             if(Type == InvestmentVehicleType.PUBLICLY_TRADED)
             {
                 if(other.Symbol == Symbol && other.Type == Type) return true;
-                return false; ;
+                return false;
             }
             if (Type == InvestmentVehicleType.PRIVATELY_HELD)
             {

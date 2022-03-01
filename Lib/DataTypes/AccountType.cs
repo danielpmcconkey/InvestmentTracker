@@ -8,12 +8,12 @@ namespace Lib.DataTypes
 {
     public enum AccountType
     {
-        TAXABLE_BROKERAGE,
-        TRADITIONAL_401_K,
-        ROTH_401_K,
-        TRADITIONAL_IRA,
-        ROTH_IRA,
-        HSA,
-        OTHER
+        TAXABLE_BROKERAGE = 0,
+        TRADITIONAL_401_K = 1,
+        ROTH_401_K = 2,
+        TRADITIONAL_IRA = 3,
+        ROTH_IRA = 4,
+        HSA = 5,
+        OTHER = 6,
     }
 }

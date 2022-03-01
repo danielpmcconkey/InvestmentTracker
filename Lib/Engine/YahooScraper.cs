@@ -55,12 +55,15 @@ namespace Lib.Engine
                 var finStreamerNodes = doc.DocumentNode.SelectNodes("//fin-streamer [@class='Fw(b) Fz(36px) Mb(-4px) D(ib)']");
                 //< fin - streamer class="Fw(b) Fz(36px) Mb(-4px) D(ib)" data-symbol="VSMAX" data-test="qsp-price" data-field="regularMarketPrice" data-trend="none" data-pricehint="2" value="97.18" active="">97.18</fin-streamer>
                 string todaysPriceString = finStreamerNodes[0].InnerText;
-                Valuation valToday = new Valuation();
-                valToday.InvestmentVehicle = new InvestmentVehicle(securityName, symbol);
-                valToday.Price = Decimal.Parse(todaysPriceString);
-                valToday.Date = new DateTimeOffset(
-                    DateTime.SpecifyKind(DateTime.Now.Date, DateTimeKind.Utc), 
-                    new TimeSpan(0, 0, 0));
+                Valuation valToday = new Valuation(
+                    InvestmentVehiclesList.investmentVehicles.Where(x =>
+                            x.Value.Type == InvestmentVehicleType.PUBLICLY_TRADED
+                            && x.Value.Symbol == symbol).FirstOrDefault().Value,
+                    new DateTimeOffset(
+                    DateTime.SpecifyKind(DateTime.Now.Date, DateTimeKind.Utc),
+                    new TimeSpan(0, 0, 0)),
+                    Decimal.Parse(todaysPriceString)
+                    );
 
 
                 prices.Add(valToday);
@@ -77,27 +80,51 @@ namespace Lib.Engine
                     if (row.ChildNodes.Count > 2)
                     {
                         // dividend rows only have 2 TDs
-                        Valuation val = new Valuation();
-                        val.InvestmentVehicle = new InvestmentVehicle(securityName, symbol);
                         var dateSpan = row.SelectSingleNode("td[1] / span");
                         var openSpan = row.SelectSingleNode("td[2] / span");
+                        decimal priceAtDate = 0;
+                        if(openSpan == null)
+                        {
+                            if(row.SelectSingleNode("td[2]").InnerHtml == "-")
+                            {
+                                Logger.error(string.Format("Skipping {0} price pull. InnerHTML is \"-\"", symbol));
+                            }
+                            else Logger.error(string.Format("Skipping {0} price pull. Value is null", symbol));
+                        }
+                        else if (Decimal.TryParse(openSpan.InnerText, out priceAtDate))
+                        {
+                            // basically skip it. Index funds won't have vaules until 
+                            // close of business. If you run on a first of the month
+                            // before COB, you'll get "-" in Yahoo results
+                            Valuation val = new Valuation(
+                                InvestmentVehiclesList.investmentVehicles.Where(x =>
+                                    x.Value.Type == InvestmentVehicleType.PUBLICLY_TRADED
+                                    && x.Value.Symbol == symbol).FirstOrDefault().Value,
+                                new DateTimeOffset(DateTime.Parse(dateSpan.InnerText).Date,
+                                    new TimeSpan(0, 0, 0)),
+                                priceAtDate
+                                );
 
-                        val.Date = new DateTimeOffset(DateTime.Parse(dateSpan.InnerText).Date, 
-                            new TimeSpan(0, 0, 0));
-                        val.Price = Decimal.Parse(openSpan.InnerText);
-                        prices.Add(val);
+                            prices.Add(val);
+                        }
+                        else
+                        {
+                            Logger.error(string.Format("Skipping {0} price pull. Price value won't parse", symbol));
+                        }
                     }
                 }
             }
             catch (Exception ex)
             {
-                if(retries < ConfigManager.GetInt("dbMaxRetries"))
+                int dbMaxRetries = ConfigManager.GetInt("dbMaxRetries");
+                Logger.info(string.Format("Exception hit. Retries = {0}. dbMaxRetries = {1}", retries, dbMaxRetries));
+                if(retries < dbMaxRetries)
                 {
                     Logger.warn("Exception thrown in YahooScraper.GetHistoryPrices. Re-trying.");
                     GetHistoryPrices(symbol, beginRange, endRange, retries + 1);
                 }
-                Logger.fatal("Unhandled exception in YahooScraper.GetHistoryPrices. Re-throwing", ex);
-                throw;
+                // skip this one
+                Logger.error(string.Format("Skipping {0} price pull. Retries exceeded", symbol));
             }
             return prices;
         }
