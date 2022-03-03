@@ -39,22 +39,7 @@ namespace InvestmentTrackerCLI
             {
                 
                 
-                if (arg.ToLower() == "shouldreadjsonaccountdata:true")
-                {
-                    FEATURETOGGLE.SHOULDREADJSONACCOUNTDATA = true;
-                }
-                if (arg.ToLower() == "shouldreadjsonaccountdata:false")
-                {
-                    FEATURETOGGLE.SHOULDREADJSONACCOUNTDATA = false;
-                }
-                if (arg.ToLower() == "shouldreadjsonpricingdata:true")
-                {
-                    FEATURETOGGLE.SHOULDREADJSONPRICINGDATA = true;
-                }
-                if (arg.ToLower() == "shouldreadjsonpricingdata:false")
-                {
-                    FEATURETOGGLE.SHOULDREADJSONPRICINGDATA = false;
-                }
+                
                 if (arg.ToLower() == "shouldcatchuppricingdata:true")
                 {
                     FEATURETOGGLE.SHOULDCATCHUPPRICINGDATA = true;
@@ -81,8 +66,6 @@ namespace InvestmentTrackerCLI
                 }
             }
             Logger.info("Feature toggles:");
-            Logger.info(string.Format("     _shouldReadJSONAccountData set to {0}", FEATURETOGGLE.SHOULDREADJSONACCOUNTDATA));
-            Logger.info(string.Format("     _shouldReadJSONPricingData set to {0}", FEATURETOGGLE.SHOULDREADJSONPRICINGDATA));
             Logger.info(string.Format("     _shouldCatchUpPricingData set to {0}", FEATURETOGGLE.SHOULDCATCHUPPRICINGDATA));
             Logger.info(string.Format("     _shouldBlendPricingData set to {0}", FEATURETOGGLE.SHOULDBLENDPRICINGDATA));
             Logger.info(string.Format("     _shouldPrintNetWorth set to {0}", FEATURETOGGLE.SHOULDPRINTNETWORTH));
@@ -105,7 +88,7 @@ namespace InvestmentTrackerCLI
 
                 // create a pricing engine for use in further operations                 
                 PricingEngine pricingEngine = new PricingEngine(prices);
-                if (FEATURETOGGLE.SHOULDREADJSONACCOUNTDATA)
+                if (FEATURETOGGLE.SHOULDREADNEWTRANSACTIONFILES)
                 {
                     Logger.info("Updating Fidelity transaction data");
                     accounts = FidelityScraper.GetTransactions(accounts, pricingEngine);

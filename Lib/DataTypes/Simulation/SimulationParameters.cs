@@ -11,9 +11,6 @@ namespace Lib.DataTypes.Simulation
         public DateTime startDate { get; set; }
         public DateTime retirementDate { get; set; }
         public DateTime birthDate { get; set; }
-        //public int riskAppetite { get; set; }
-        //public decimal retirementDrawDownPercent { get; set; }
-        //public List<Asset> assets { get; set; }
         public decimal monthlyGrossIncomePreRetirement { get; set; }
         public decimal monthlyNetSocialSecurityIncome { get; set; }
         public decimal monthlySpendLifeStyleToday { get; set; }
@@ -23,8 +20,6 @@ namespace Lib.DataTypes.Simulation
         public decimal monthlyInvestBrokerage { get; set; }
         public decimal monthlyInvestHSA { get; set; }
         public decimal annualRSUInvestmentPreTax { get; set; }
-        //public decimal minBondPercentPreRetirement { get; set; }
-        //public decimal maxBondPercentPreRetirement { get; set; }
         public decimal xMinusAgeStockPercentPreRetirement { get; set; }
         public decimal numYearsCashBucketInRetirement { get; set; }
         public decimal numYearsBondBucketInRetirement { get; set; }

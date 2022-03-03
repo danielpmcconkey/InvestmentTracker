@@ -177,8 +177,7 @@ namespace Lib.Engine.MonteCarlo
             analytics.successRateOverall = analytics.totalRunsWithoutBankruptcy
                 / (analytics.totalRunsWithBankruptcy + (decimal)analytics.totalRunsWithoutBankruptcy);
 
-            //bankruptcyCountsByRetirementAnalogYear = new Dictionary<int, int>();
-
+            
             if (analytics.totalRunsWithBankruptcy > 0)
             {
                 analytics.averageAgeAtBankruptcy = (decimal)bankruptcyRuns.Average(x => x.ageAtBankruptcy);

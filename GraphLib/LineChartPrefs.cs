@@ -13,8 +13,6 @@ namespace GraphLib
         public double gridBorderStrokeWidthInPx;
         public string legendBGHexColor;
 
-        //public int gridDivisionsX;
-        //public int gridDivisionsY;
         public string gridLineStrokeHexColor;
         public double gridLineStrokeWidthInPx;
 

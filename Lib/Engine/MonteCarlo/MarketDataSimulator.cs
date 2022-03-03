@@ -62,7 +62,6 @@ namespace Lib.Engine.MonteCarlo
             int offset = RNG.getRandomInt(0, numHistoricalPoints);
 
             DateTime pointer = start;
-            //DateTime pointerToHistoryData = actualHistoryData[offset].period;
             decimal priorValue = marketHistoryStartValue;
             
             var roundedRetirement = DateTimeHelper.RoundToMonth(
@@ -79,10 +78,7 @@ namespace Lib.Engine.MonteCarlo
                 
                 // figure out when our retirement date analog is
                 if (pointer == roundedRetirement) retirementDateHistoricalAnalog = actualHistoryData[offset].period;
-                if(retirementDateHistoricalAnalog.Year > 2022)
-                {
-                    string burp = "true";
-                }
+                
                 // and move everything forward by 1
                 pointer = pointer.AddMonths(1);
                 offset++;

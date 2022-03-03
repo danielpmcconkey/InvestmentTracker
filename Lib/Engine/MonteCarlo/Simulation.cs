@@ -39,8 +39,6 @@ namespace Lib.Engine.MonteCarlo
         private long monthlyInvestBrokerage = 0;
         private long monthlyInvestHSA = 0;
         private long annualRSUInvestmentPreTax = 0;
-        //private decimal minBondPercentPreRetirement = 0m;
-        //private decimal maxBondPercentPreRetirement = 0m;
         private decimal xMinusAgeStockPercentPreRetirement = 0m;
         private decimal numYearsCashBucketInRetirement = 0;
         private decimal numYearsBondBucketInRetirement = 0;
@@ -72,8 +70,6 @@ namespace Lib.Engine.MonteCarlo
         #region public functions
         public void init(SimulationParameters simParams, List<Asset> assetsGoingIn)
         {
-            // load parameters of the run
-            //this.simParams = simParams;
             totalCashOnHand = 0;
             _totalLifeStyleSpend = 0;
             monthlyNetSocialSecurityIncome = convertFloatAmountToSafeCalcInt(simParams.monthlyNetSocialSecurityIncome);
@@ -84,8 +80,6 @@ namespace Lib.Engine.MonteCarlo
             monthlyInvestBrokerage = convertFloatAmountToSafeCalcInt(simParams.monthlyInvestBrokerage);
             monthlyInvestHSA = convertFloatAmountToSafeCalcInt(simParams.monthlyInvestHSA);
             annualRSUInvestmentPreTax = convertFloatAmountToSafeCalcInt(simParams.annualRSUInvestmentPreTax);
-            //minBondPercentPreRetirement = simParams.minBondPercentPreRetirement;
-            //maxBondPercentPreRetirement = simParams.maxBondPercentPreRetirement;
             xMinusAgeStockPercentPreRetirement = simParams.xMinusAgeStockPercentPreRetirement;
             numYearsCashBucketInRetirement = simParams.numYearsCashBucketInRetirement;
             numYearsBondBucketInRetirement = simParams.numYearsBondBucketInRetirement;
@@ -162,11 +156,9 @@ namespace Lib.Engine.MonteCarlo
             while (simulationRunDate <= deathDate)
             {
 
-                //var burp1 = calculateNetWorth(false);
                 // things to do everyday
                 accrueInterest();
-                //var burp2 = calculateNetWorth(false);
-
+                
                 // pre-retirement
                 if (simulationRunDate < retirementDate)
                 {
@@ -190,7 +182,6 @@ namespace Lib.Engine.MonteCarlo
                     if (simulationRunDate.Day == 1)
                     {
                         logicTrace("run", "new month");
-                        //var burp3 = calculateNetWorth(false);
                         // get paid, make 401k contributions
                         if (monthlyInvestRoth401k > 0)
                             invest(monthlyInvestRoth401k, TaxBucket.TAXFREE, null);
@@ -204,7 +195,6 @@ namespace Lib.Engine.MonteCarlo
                         invest(monthlyInvestBrokerage, TaxBucket.TAXABLE, null);
                         // make HSA investment
                         invest(monthlyInvestHSA, TaxBucket.TAXFREE, null);
-                        //var burp4 = calculateNetWorth(false);
                     }
                 }
                 // retirement day
@@ -273,8 +263,6 @@ namespace Lib.Engine.MonteCarlo
                             payBillsInRetirement();
                         }
                     }
-                    // things to do every day
-                    // ??
                 }
 
 
@@ -421,8 +409,6 @@ namespace Lib.Engine.MonteCarlo
             simulationRunResult.bankruptcydate = simulationRunDate;
             simulationRunResult.wealthAtDeath = 0;
             simulationRunResult.ageAtBankruptcy = (decimal)((simulationRunDate - birthDate).TotalDays / 365.25);
-
-            //string burp = _logicTrace;
         }
         /// <summary>
         /// pull from a specific asset and add to cash on hand
@@ -470,9 +456,7 @@ namespace Lib.Engine.MonteCarlo
             //decimal amountRounded = (decimal) Math.Round(amount, 2);
             if (amount < 0)
             {
-                //bool burp = true;
                 throw new Exception("Asked to withdraw < 0 amount from investments");
-                //return;
             }
             long amountDrawn = 0;
             long amountLeft = amount;

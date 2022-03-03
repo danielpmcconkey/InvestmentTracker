@@ -238,11 +238,6 @@ namespace Lib.Engine.MonteCarlo
                             assetsGoingIn.Add(a);
 
                         }
-                        //if (tGroup.vehicle.Type == InvestmentVehicleType.PRIVATELY_HELD)
-                        //{
-                        //    a.investmentIndex = InvestmentIndex.NONE;
-                        //}
-
                     }
                 }
 
@@ -345,12 +340,7 @@ namespace Lib.Engine.MonteCarlo
                         a.investmentIndex = InvestmentIndex.EQUITY;
                         assetsGoingIn.Add(a);
 
-                    }
-                    //if (tGroup.vehicle.Type == InvestmentVehicleType.PRIVATELY_HELD)
-                    //{
-                    //    a.investmentIndex = InvestmentIndex.NONE;
-                    //}
-                    
+                    }                    
                 }
             }
             

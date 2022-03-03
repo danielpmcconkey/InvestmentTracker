@@ -13,22 +13,8 @@ namespace Utilities
         public static bool MULTITHREAD = true;
         public static bool SHOULDDEBUGSIMLOGIC = false;
 
-        
 
-        /// <summary>
-        /// whether to update the JSON files with teh result of the run. Should be true every run unless you're doing something interesting
-        /// </summary>
-        //public static bool SHOULDWRITEJSONDATA = true;
-
-        /// <summary>
-        /// whether to pull accounts from JSON files. Should be true every run unless you're doing something interesting
-        /// </summary>
-        public static bool SHOULDREADJSONACCOUNTDATA = true;
-
-        /// <summary>
-        /// whether to pull prices from JSON files. Should be true every run unless you're doing something interesting
-        /// </summary>
-        public static bool SHOULDREADJSONPRICINGDATA = true;
+        public static bool SHOULDREADNEWTRANSACTIONFILES = true;
 
         /// <summary>
         /// check if we have prices from first needed transaction date to present and, if not, scrape them from Yahoo
