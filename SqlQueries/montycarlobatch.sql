@@ -50,12 +50,15 @@
 	p.annualInflationLow,
 	p.annualInflationHi,
 	p.socialSecurityCollectionAge
-FROM public.montecarlobatch b
-left join public.montecarlosimparameters p on b.runid = p.runid
+FROM investmenttracker.montecarlobatch b
+left join investmenttracker.montecarlosimparameters p on b.runid = p.runid
 where 1=1
 and b.montecarloversion = '2022.02.23.014'
---and b.runid in ( 'b3ec6ffd-e0af-42bb-8817-f7a0a63803a9', 'd4097d4d-5780-4399-8ad9-51b87ad80a4d')
-and numberofsimstorun > 1000
+--and b.runid = '4f59d491-45b4-402f-b082-87131175177c'
+--and numberofsimstorun > 1000
+and numberofsimstorun < 1100
+--and rundate > '2022-03-01 00:00'
 order by ((b.analytics->'averageLifeStyleSpendSuccessfulBadYears')::varchar(17)::numeric * (b.analytics->'successRateBadYears')::varchar(17)::numeric) desc
+--order by rundate desc
 limit 100
 ;

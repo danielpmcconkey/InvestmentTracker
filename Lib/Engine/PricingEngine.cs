@@ -172,8 +172,7 @@ namespace Lib.Engine
             {
                 string addressPortion = ConfigManager.GetString("ZillowAddressForUrl");
                 var currentHousePrice = ZillowScraper.GetCurrentPrice(addressPortion);
-                decimal mortgageBalance = ConfigManager.GetDecimal("PrimaryResidenceMortgageBalance");
-                currentHousePrice.Price -= mortgageBalance;
+                
                 _valuations.Add(currentHousePrice);
             }
 
@@ -372,6 +371,8 @@ namespace Lib.Engine
                             && x.Date == valuation.Date
                             ).FirstOrDefault();
                         oldValuation.Price = valuation.Price;
+
+                        // todo: update the DB price
                     }
                 }
 

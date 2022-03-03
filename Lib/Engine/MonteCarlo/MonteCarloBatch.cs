@@ -151,7 +151,7 @@ namespace Lib.Engine.MonteCarlo
         }
         public string serializeSelf()
         {
-            string jsonString = DataAccessLayer.SerializeMonteCarloBatch(this);
+            string jsonString = DataAccessLayer.SerializeType<MonteCarloBatch>(this);
             return jsonString;
         }
         private decimal GetMedianTotalLifeStyleSpend()

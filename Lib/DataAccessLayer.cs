@@ -23,50 +23,26 @@ namespace Lib
         {
             _dataDirectory = ConfigManager.GetString("DataDirectory");
         }
+
+        #region JSON functions
+        public static MonteCarloBatch DeserializeMonteCarloBatch(string serializedBatch)
+        {
+            MonteCarloBatch batch = DeserializeType<MonteCarloBatch>(serializedBatch);
+
+            return batch;
+        }
+        public static T DeserializeType<T>(string serializedItem)
+        {
+            return JsonSerializer.Deserialize<T>(serializedItem);
+        }
+        public static string SerializeType<T>(T item)
+        {
+            return JsonSerializer.Serialize<T>(item);
+        } 
+        #endregion
+
         
-        public static MonteCarloBatch DeserializeMonteCarloBatch(string serializedMonteCarlo)
-        {
-            return JsonSerializer.Deserialize<MonteCarloBatch>(serializedMonteCarlo);
-        }
-        public static List<Valuation> DeSerializePricingData()
-        {
-            string pricesPath = Path.Combine(_dataDirectory,
-                ConfigManager.GetString("JsonPricesFileName"));
-
-            // the prices file might not be built yet so return an empty list if so
-            if (!File.Exists(pricesPath)) return new List<Valuation>();
-
-            string jsonString = File.ReadAllText(pricesPath);
-            List<Valuation> prices = JsonSerializer.Deserialize<List<Valuation>>(jsonString);
-
-            //var housePrices = prices.Where(x => x.InvestmentVehicle.Name == "Primary residence")
-            //    .OrderBy(y => y.Date).ToList();
-            //foreach(var p in housePrices)
-            //{
-            //    Logger.debug(String.Format("Primary residence price: {0} = {1}", p.Date, p.Price ));
-
-            //}
-
-            return prices;
-        }
-        //public static List<Account> ReadInitialAccountsCSV()
-        //{
-        //    string filePath = Path.Combine(_dataDirectory,
-        //        ConfigManager.GetString("InitialAccountsFileName"));
-
-        //    using (var reader = new StreamReader(filePath))
-        //    {
-        //        using (var csv = new CsvReader(reader, CultureInfo.InvariantCulture))
-        //        {
-        //            List<Account> accounts = csv.GetRecords<Account>().ToList();
-        //            foreach (var account in accounts)
-        //            {
-        //                account.Transactions = new List<Transaction>();
-        //            }
-        //            return accounts;
-        //        }
-        //    }
-        //}
+        
         public static bool IsValuationInDb(Valuation v)
         {
             string q = @"
@@ -242,39 +218,8 @@ namespace Lib
 
             return outList;
         }
-        public static void SerializeData(List<Account> accounts, List<Valuation> prices)
-        {
-            // ensure the data directory exists
-            if (!Directory.Exists(_dataDirectory))
-            {
-                Directory.CreateDirectory(_dataDirectory);
-            }
-            Logger.info("Serializing account data");
-            string accountsJson = JsonSerializer.Serialize(accounts);
-            string accountsPath = Path.Combine(_dataDirectory,
-                ConfigManager.GetString("JsonAccountsFileName"));
-            using (StreamWriter file = new(accountsPath, append: false))
-            {
-                file.Write(accountsJson);
-            }
-
-            Logger.info("Serializing price data");
-            string pricesJson = JsonSerializer.Serialize(prices);
-            string pricesPath = Path.Combine(_dataDirectory,
-                ConfigManager.GetString("JsonPricesFileName"));
-            using (StreamWriter file = new(pricesPath, append: false))
-            {
-                file.Write(pricesJson);
-            }
-        }
-        public static string SerializeMonteCarloBatch(MonteCarloBatch batch)
-        {
-            return JsonSerializer.Serialize(batch);
-        }
-        public static string SerializeType<T>(T item)
-        {
-            return JsonSerializer.Serialize<T>(item);
-        }
+        
+        
         public static void WriteNewAccountToDb(Account a)
         {
             using (var conn = PostgresDAL.getConnection())

@@ -50,10 +50,14 @@ namespace Lib.Engine
                             var matchingVehicles = InvestmentVehiclesList.investmentVehicles.Where(x =>
                                 x.Value.Type == InvestmentVehicleType.PUBLICLY_TRADED
                                 && x.Value.Symbol == symbol);
-                            InvestmentVehicle vehicle = new InvestmentVehicle(securityDescription, symbol);
-                            if (matchingVehicles.Count() > 0) vehicle = matchingVehicles.FirstOrDefault().Value;
+                            InvestmentVehicle vehicle = null;
+                            if (matchingVehicles.Count() > 0)
+                            {
+                                vehicle = matchingVehicles.FirstOrDefault().Value;
+                            }
                             else
                             {
+                                vehicle = new InvestmentVehicle(securityDescription, symbol);
                                 InvestmentVehiclesList.investmentVehicles.Add(vehicle.Id, vehicle);
                             } 
 
@@ -66,7 +70,7 @@ namespace Lib.Engine
                                 try
                                 {
                                     decimal todaysPrice = pricingEngine.GetPriceAtDate(vehicle, date).Price;
-                                    quantity = cashAmount / todaysPrice;
+                                    quantity = Math.Round(cashAmount / todaysPrice,4);
                                 }
                                 catch (Exception)
                                 {
@@ -89,7 +93,7 @@ namespace Lib.Engine
                                  && t.TransactionType == tType
                                  && t.Date == date
                                  && t.CashPriceTotalTransaction == absCash
-                                 && t.Quantity == absQty)
+                                 && Math.Round(t.Quantity,4) == absQty)
                                 .Count() == 0)
                             {
 

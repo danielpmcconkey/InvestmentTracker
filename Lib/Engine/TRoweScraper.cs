@@ -60,10 +60,11 @@ namespace Lib.Engine
                             var matchingVehicles = InvestmentVehiclesList.investmentVehicles.Where(x =>
                                 x.Value.Type == InvestmentVehicleType.PUBLICLY_TRADED
                                 && x.Value.Symbol == symbol);
-                            InvestmentVehicle vehicle = new InvestmentVehicle(investment, symbol);
+                            InvestmentVehicle vehicle = null;
                             if (matchingVehicles.Count() > 0) vehicle = matchingVehicles.FirstOrDefault().Value;
                             else
                             {
+                                vehicle = new InvestmentVehicle(investment, symbol);
                                 InvestmentVehiclesList.investmentVehicles.Add(vehicle.Id, vehicle);
                             }
 

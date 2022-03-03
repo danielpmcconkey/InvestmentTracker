@@ -29,7 +29,10 @@ namespace Lib.Engine
 
                     var allH3s = values.FindElements(By.XPath("//h3[contains(@class, \"Text-c11n-8-62-5__sc-aiai24-0\")]"));
                     string zestimate = allH3s[0].Text;
-                    
+
+                    decimal mortgageBalance = ConfigManager.GetDecimal("PrimaryResidenceMortgageBalance");
+                    decimal currentHousePrice = Decimal.Parse(zestimate.Replace('$', ' ').Trim());
+                    currentHousePrice -= mortgageBalance;
 
                     Valuation valToday = new Valuation(
                         InvestmentVehiclesList.investmentVehicles.Where(x =>
@@ -38,7 +41,7 @@ namespace Lib.Engine
                         new DateTimeOffset(
                             DateTime.SpecifyKind(DateTime.Now.Date, DateTimeKind.Utc),
                             new TimeSpan(0, 0, 0)),
-                        Decimal.Parse(zestimate.Replace('$', ' ').Trim())
+                        currentHousePrice
                         );
 
                     driver.Close();

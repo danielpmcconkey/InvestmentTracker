@@ -87,47 +87,6 @@ namespace InvestmentTrackerCLI
             Logger.info(string.Format("     _shouldBlendPricingData set to {0}", FEATURETOGGLE.SHOULDBLENDPRICINGDATA));
             Logger.info(string.Format("     _shouldPrintNetWorth set to {0}", FEATURETOGGLE.SHOULDPRINTNETWORTH));
         }
-        private static void LoadAccoutsToDB(List<Account> accounts)
-        {
-            List<InvestmentVehicle> vehicles = new List<InvestmentVehicle>();
-            var trans = accounts.SelectMany(a => a.Transactions).ToList();
-            foreach(var tran in trans)
-            {
-                bool isnew = true;
-                foreach(var vehicle in vehicles)
-                {
-                    if(vehicle.Equals(tran.InvestmentVehicle))
-                    {
-                        isnew = false;
-                        if(vehicle.Name != tran.InvestmentVehicle.Name 
-                            && vehicle.Name == vehicle.Symbol)
-                        {
-                            vehicle.Name = tran.InvestmentVehicle.Name;
-                        }
-                        tran.InvestmentVehicle = vehicle;
-                    }
-                }
-                if(isnew)
-                {
-                    tran.InvestmentVehicle.Id = Guid.NewGuid();
-                    vehicles.Add(tran.InvestmentVehicle);
-                }
-            }
-            foreach(var vehicle in vehicles)
-            {
-                DataAccessLayer.WriteNewInvestMentVehicleToDb(vehicle);
-            }
-            // add accounts to DB
-            foreach(Account account in accounts)
-            {
-                account.Id = Guid.NewGuid();
-                foreach(var t in account.Transactions)
-                {
-                    t.Id = Guid.NewGuid();
-                }
-                DataAccessLayer.WriteNewAccountToDb(account);
-            }
-        }
         internal static void Run()
         {
             Logger.info("Beginning run.");
@@ -187,13 +146,7 @@ namespace InvestmentTrackerCLI
                         pricingEngine.PrintPrices();
                     }
                 }
-                //if (FEATURETOGGLE.SHOULDWRITEJSONDATA)
-                //{
-                //    // serialize data back to files
-                //    Logger.info("Serializing data back to files");
-                //    DataAccessLayer.SerializeData(accounts, prices);
-                //    Logger.info("Finished serializing data to files");
-                //}
+                
                 StringBuilder sbOutput = new StringBuilder();
                 double captionWidth = 0;
 
@@ -343,6 +296,7 @@ namespace InvestmentTrackerCLI
                     sbOutput.AppendLine("</div>");
                     Logger.info("Finished running Monte Carlo simulation");
                 }
+                WriteHTMLFile(sbOutput, captionWidth);
                 if (FEATURETOGGLE.SHOULDRUNMONTECARLOBATCHES)
                 {
                     Logger.info("Running Monte Carlo batches");
@@ -353,7 +307,6 @@ namespace InvestmentTrackerCLI
                     MonteCarloHelper.ExtendBestRuns("2022.02.23.014");
                     Logger.info("Finished extending best Monte Carlo batches");
                 }
-                WriteHTMLFile(sbOutput, captionWidth);
 
             }
             catch (Exception ex)
