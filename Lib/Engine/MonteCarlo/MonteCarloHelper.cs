@@ -96,7 +96,7 @@ namespace Lib.Engine.MonteCarlo
 
             return graphData;
         }
-        public static void RunMonteCarloBatches(int numBatches, List<Account> accounts, PricingEngine pricingEngine)
+        public static void RunMonteCarloBatches(int numBatches, List<Account> accounts)
         {
             for(int i = 0; i < numBatches; i++)
             {
@@ -195,7 +195,7 @@ namespace Lib.Engine.MonteCarlo
                             .Where(x => x.TransactionType == TransactionType.SALE);
                         decimal numShares = allPurchases.Sum(y => y.Quantity);
                         numShares -= allSales.Sum(y => y.Quantity);
-                        decimal pricePerShare = pricingEngine.GetPriceAtDate(tGroup.vehicle, today).Price;
+                        decimal pricePerShare = PricingEngine.GetPriceAtDate(tGroup.vehicle, today).Price;
                         a.amountCurrent = (long)(Math.Round(pricePerShare * numShares * 10000, 0));
                         // RMD dates
                         DateTime birthDayAt72 = ConfigManager.GetDateTime("BirthDate").AddYears(72);
@@ -246,7 +246,7 @@ namespace Lib.Engine.MonteCarlo
                 mc.runBatch();
             }
         }
-        public static MonteCarloBatch RunMonteCarlo(List<Account> accounts, PricingEngine pricingEngine)
+        public static MonteCarloBatch RunMonteCarlo(List<Account> accounts)
         {
             SimulationParameters simParams = new SimulationParameters()
             {
@@ -298,7 +298,7 @@ namespace Lib.Engine.MonteCarlo
                         .Where(x => x.TransactionType == TransactionType.SALE);
                     decimal numShares = allPurchases.Sum(y => y.Quantity);
                     numShares -= allSales.Sum(y => y.Quantity);
-                    decimal pricePerShare = pricingEngine.GetPriceAtDate(tGroup.vehicle, today).Price;
+                    decimal pricePerShare = PricingEngine.GetPriceAtDate(tGroup.vehicle, today).Price;
                     a.amountCurrent = (long)(Math.Round(pricePerShare * numShares * 10000, 0));
                     // RMD dates
                     DateTime birthDayAt72 = ConfigManager.GetDateTime("BirthDate").AddYears(72);

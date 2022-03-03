@@ -18,7 +18,7 @@ namespace Lib.Engine
         {
             _moneyConverter = new MoneyTypeConverter<Decimal>();
         }
-        public static List<Account> GetTransactions(List<Account> accounts, PricingEngine pricingEngine)
+        public static List<Account> GetTransactions(List<Account> accounts)
         {
             string dataDirectory = ConfigManager.GetString("DataDirectory");
             string transactionsFile = ConfigManager.GetString("HealthEquityTransactionsFile");

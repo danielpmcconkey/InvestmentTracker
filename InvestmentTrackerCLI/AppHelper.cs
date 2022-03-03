@@ -87,24 +87,24 @@ namespace InvestmentTrackerCLI
 
 
                 // create a pricing engine for use in further operations                 
-                PricingEngine pricingEngine = new PricingEngine(prices);
+                PricingEngine.AddValuations(prices);
                 if (FEATURETOGGLE.SHOULDREADNEWTRANSACTIONFILES)
                 {
                     Logger.info("Updating Fidelity transaction data");
-                    accounts = FidelityScraper.GetTransactions(accounts, pricingEngine);
+                    accounts = FidelityScraper.GetTransactions(accounts);
                     Logger.info("Finished updating Fidelity transaction data");
                     Logger.info("Updating T.Rowe Price transaction data");
-                    accounts = TRoweScraper.GetTransactions(accounts, pricingEngine);
+                    accounts = TRoweScraper.GetTransactions(accounts);
                     Logger.info("Finished updating T.Rowe Price transaction data");
                     Logger.info("Updating Health Equity transaction data");
-                    accounts = HealthEquityScraper.GetTransactions(accounts, pricingEngine);
+                    accounts = HealthEquityScraper.GetTransactions(accounts);
                     Logger.info("Finished updating Health Equity transaction data");
                 }
 
                 if (FEATURETOGGLE.SHOULDCATCHUPPRICINGDATA)
                 {
                     Logger.info("Catching up pricing data");
-                    prices = pricingEngine.CatchUpPrices(accounts);
+                    prices = PricingEngine.CatchUpPrices(accounts);
                     Logger.info("Finished catching up pricing data");
                 }
                 if (FEATURETOGGLE.SHOULDBLENDPRICINGDATA)
@@ -114,19 +114,19 @@ namespace InvestmentTrackerCLI
                     if (logPrices)
                     {
                         Logger.info("Printing prices before blend");
-                        pricingEngine.PrintPrices();
+                        PricingEngine.PrintPrices();
                     }
-                    prices = pricingEngine.BlendPricesWithRealTransactions(accounts);
+                    prices = PricingEngine.BlendPricesWithRealTransactions(accounts);
                     if (logPrices)
                     {
                         Logger.info("Printing prices after adding real transactions");
-                        pricingEngine.PrintPrices();
+                        PricingEngine.PrintPrices();
                     }
-                    prices = pricingEngine.BlendPricesDaily(accounts);
+                    prices = PricingEngine.BlendPricesDaily(accounts);
                     if (logPrices)
                     {
                         Logger.info("Printing prices after full blend");
-                        pricingEngine.PrintPrices();
+                        PricingEngine.PrintPrices();
                     }
                 }
                 
@@ -140,29 +140,29 @@ namespace InvestmentTrackerCLI
                     GraphPrefs graphPrefs = GetDefaultGraphPrefs("Total Net Worth by Investment Type");
                     LineChartPrefs lineChartPrefs = GetDefaultLineChartPrefs();
 
-                    GraphData graphDataTotalWorth = WorthEngine.GetTotalNetWorthByType(accounts, pricingEngine);
+                    GraphData graphDataTotalWorth = WorthEngine.GetTotalNetWorthByType(accounts);
                     LineChart svgTotalWorth = new LineChart(graphPrefs, lineChartPrefs, graphDataTotalWorth, "NetWorthGraphAll");
 
                     GraphPrefs graphPrefsTaxBuckets = GetDefaultGraphPrefs("Total Net Worth by Tax Buckets");
-                    GraphData graphDataTaxBuckets = WorthEngine.GetTotalNetWorthByTaxBucket(accounts, pricingEngine);
+                    GraphData graphDataTaxBuckets = WorthEngine.GetTotalNetWorthByTaxBucket(accounts);
                     LineChart svgTaxBuckets = new LineChart(graphPrefsTaxBuckets, lineChartPrefs, graphDataTaxBuckets, "TaxBucketsGraph");
                                         
                     GraphPrefs graphPrefsStocks = GetDefaultGraphPrefs("Individual stock worth");
-                    GraphData graphDataStocks = WorthEngine.GetStockGraphData(accounts, pricingEngine);
+                    GraphData graphDataStocks = WorthEngine.GetStockGraphData(accounts);
                     LineChartPrefs stocklLineChartPrefs = GetDefaultLineChartPrefs();
                     stocklLineChartPrefs.xColumnLabelsTextFormat = "yyyy-MM-dd";
                     LineChart svgStocks = new LineChart(graphPrefsStocks, stocklLineChartPrefs, graphDataStocks, "StocksGraph");
 
                     GraphPrefs graphPrefsIndividualStocksComparison = GetDefaultGraphPrefs("Individual stocks compared to S&P 500");
                     GraphData graphDataStocksComparison = WorthEngine
-                        .GetSPDRComparisonGraphData(accounts, pricingEngine, true);
+                        .GetSPDRComparisonGraphData(accounts, true);
                     LineChart svgStockComparison = new LineChart(
                         graphPrefsIndividualStocksComparison, stocklLineChartPrefs, 
                         graphDataStocksComparison, "IndStockCompareGraph");
 
                     GraphPrefs graphPrefsAllPublicComparison = GetDefaultGraphPrefs("All publicly traded investments compared to S&P 500");
                     GraphData graphDataAllPublicComparison = WorthEngine
-                        .GetSPDRComparisonGraphData(accounts, pricingEngine, false);
+                        .GetSPDRComparisonGraphData(accounts, false);
                     LineChart svgAllPublicComparison = new LineChart(
                         graphPrefsAllPublicComparison, lineChartPrefs,
                         graphDataAllPublicComparison, "PublicCompareGraph");
@@ -198,7 +198,7 @@ namespace InvestmentTrackerCLI
                 if (FEATURETOGGLE.SHOULDRUNMONTECARLO)
                 {
                     Logger.info("Running Monte Carlo simulation");
-                    MonteCarloBatch mcBatch = MonteCarloHelper.RunMonteCarlo(accounts, pricingEngine);
+                    MonteCarloBatch mcBatch = MonteCarloHelper.RunMonteCarlo(accounts);
                     GraphData mcGraphData = MonteCarloHelper.GetMonteCarloGraphData(mcBatch);
                     GraphPrefs graphPrefs = GetDefaultGraphPrefs("Monte Carlo Simulation Results");
                     graphPrefs.graphFillHexColor = "F9F5EC";
@@ -284,7 +284,7 @@ namespace InvestmentTrackerCLI
                 {
                     Logger.info("Running Monte Carlo batches");
                     int numBatchesToRun = ConfigManager.GetInt("numMonteCarloBatchesToRun");
-                    MonteCarloHelper.RunMonteCarloBatches(numBatchesToRun, accounts, pricingEngine);
+                    MonteCarloHelper.RunMonteCarloBatches(numBatchesToRun, accounts);
                     Logger.info("Finished running Monte Carlo batches");
                     Logger.info("Extending best Monte Carlo batches");
                     MonteCarloHelper.ExtendBestRuns("2022.02.23.014");

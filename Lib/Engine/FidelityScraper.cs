@@ -12,7 +12,7 @@ namespace Lib.Engine
 {
     public static class FidelityScraper
     {
-        public static List<Account> GetTransactions(List<Account> accounts, PricingEngine pricingEngine)
+        public static List<Account> GetTransactions(List<Account> accounts)
         {
             string dataDirectory = ConfigManager.GetString("DataDirectory");
             string fidelityFile = ConfigManager.GetString("FidelityTransactionsFile");
@@ -69,7 +69,7 @@ namespace Lib.Engine
                             {
                                 try
                                 {
-                                    decimal todaysPrice = pricingEngine.GetPriceAtDate(vehicle, date).Price;
+                                    decimal todaysPrice = PricingEngine.GetPriceAtDate(vehicle, date).Price;
                                     quantity = Math.Round(cashAmount / todaysPrice,4);
                                 }
                                 catch (Exception)

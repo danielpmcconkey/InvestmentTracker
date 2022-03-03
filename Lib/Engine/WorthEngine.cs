@@ -43,8 +43,7 @@ namespace Lib.Engine
             _mutualFunds.Add("VINIX");
         }
         #region public methods
-        public static GraphData GetSPDRComparisonGraphData(List<Account> accounts,
-            PricingEngine pricingEngine, bool isIndidivualStocksOnly)
+        public static GraphData GetSPDRComparisonGraphData(List<Account> accounts, bool isIndidivualStocksOnly)
         {
             bool shouldLogPositions = false;
             if (shouldLogPositions)
@@ -106,7 +105,7 @@ namespace Lib.Engine
                     string stockSymbol = t.InvestmentVehicle.Symbol;
                     decimal quantity = t.Quantity;
                     decimal cashValue = t.CashPriceTotalTransaction;
-                    decimal spyPrice = pricingEngine.GetPriceAtDate(spyV, t.Date).Price;
+                    decimal spyPrice = PricingEngine.GetPriceAtDate(spyV, t.Date).Price;
                     decimal numSpyShares = cashValue / spyPrice;
                     if(t.TransactionType == TransactionType.SALE)
                     {
@@ -145,7 +144,7 @@ namespace Lib.Engine
                 // now calculate wealth
                 foreach (var p in positions)
                 {
-                    decimal price = pricingEngine.GetPriceAtDate(
+                    decimal price = PricingEngine.GetPriceAtDate(
                         InvestmentVehiclesList.investmentVehicles.Where(x =>
                             x.Value.Type == InvestmentVehicleType.PUBLICLY_TRADED
                             && x.Value.Symbol == p.Key).FirstOrDefault().Value, thisDate).Price;
@@ -174,12 +173,12 @@ namespace Lib.Engine
 
             return graphData;
         }
-        public static GraphData GetStockGraphData(List<Account> accounts, PricingEngine pricingEngine)
+        public static GraphData GetStockGraphData(List<Account> accounts)
         {
-            List<Position> stockPositions = GetAllIndividualStockPositions(accounts, pricingEngine);
-            return GetGraphDataForEachSymbol(stockPositions, pricingEngine);
+            List<Position> stockPositions = GetAllIndividualStockPositions(accounts);
+            return GetGraphDataForEachSymbol(stockPositions);
         }
-        public static GraphData GetTotalNetWorthByTaxBucket(List<Account> accounts, PricingEngine pricingEngine)
+        public static GraphData GetTotalNetWorthByTaxBucket(List<Account> accounts)
         {
             GraphData graphData = new GraphData(
                 TypeHelper.dateTimeOffsetType, TypeHelper.decimalType);
@@ -192,10 +191,10 @@ namespace Lib.Engine
             // add taxable
             var taxableAccounts = accounts.Where(x => x.AccountType == AccountType.TAXABLE_BROKERAGE
                 || x.AccountType == AccountType.OTHER).ToList();
-            List<Position> taxablePublicPositions = GetTaxablePositions(taxableAccounts, pricingEngine);
-            List<Position> taxablePrivatePositions = GetAllPrivatePositions(taxableAccounts, pricingEngine);
-            GraphSeries taxablePublicWorth = GetGraphSeriesFromPositions(taxablePublicPositions, pricingEngine);
-            GraphSeries taxablePrivateWorth = GetGraphSeriesFromPositions(taxablePrivatePositions, pricingEngine);
+            List<Position> taxablePublicPositions = GetTaxablePositions(taxableAccounts);
+            List<Position> taxablePrivatePositions = GetAllPrivatePositions(taxableAccounts);
+            GraphSeries taxablePublicWorth = GetGraphSeriesFromPositions(taxablePublicPositions);
+            GraphSeries taxablePrivateWorth = GetGraphSeriesFromPositions(taxablePrivatePositions);
             List<GraphSeries> taxableWorthList = new List<GraphSeries>();
             taxableWorthList.Add(taxablePublicWorth);
             taxableWorthList.Add(taxablePrivateWorth);
@@ -207,8 +206,8 @@ namespace Lib.Engine
             // add tax deferred
             var taxDeferredAccounts = accounts.Where(x => x.AccountType == AccountType.TRADITIONAL_401_K
                 || x.AccountType == AccountType.TRADITIONAL_IRA).ToList();
-            List<Position> taxDeferredPositions = GetTaxablePositions(taxDeferredAccounts, pricingEngine);
-            GraphSeries taxDeferredWorth = GetGraphSeriesFromPositions(taxDeferredPositions, pricingEngine);
+            List<Position> taxDeferredPositions = GetTaxablePositions(taxDeferredAccounts);
+            GraphSeries taxDeferredWorth = GetGraphSeriesFromPositions(taxDeferredPositions);
             taxDeferredWorth.name = "Tax deferred";
             taxDeferredWorth.seriesPrefs = new SeriesPrefs()
             {
@@ -221,8 +220,8 @@ namespace Lib.Engine
             var taxFreeAccounts = accounts.Where(x => x.AccountType == AccountType.ROTH_401_K
                 || x.AccountType == AccountType.ROTH_IRA
                 || x.AccountType == AccountType.HSA).ToList();
-            List<Position> taxFreePositions = GetTaxablePositions(taxFreeAccounts, pricingEngine);
-            GraphSeries taxFreeWorth = GetGraphSeriesFromPositions(taxFreePositions, pricingEngine);
+            List<Position> taxFreePositions = GetTaxablePositions(taxFreeAccounts);
+            GraphSeries taxFreeWorth = GetGraphSeriesFromPositions(taxFreePositions);
             taxFreeWorth.name = "Tax free";
             taxFreeWorth.seriesPrefs = new SeriesPrefs()
             {
@@ -242,7 +241,7 @@ namespace Lib.Engine
 
             return graphData;
         }
-        public static GraphData GetTotalNetWorthByType(List<Account> accounts, PricingEngine pricingEngine)
+        public static GraphData GetTotalNetWorthByType(List<Account> accounts)
         {
             GraphData graphData = new GraphData(
                 TypeHelper.dateTimeOffsetType, TypeHelper.decimalType);
@@ -250,8 +249,8 @@ namespace Lib.Engine
 
             // types are individual stocks, index funds, and private assets
             // add individual stocks
-            List<Position> stockPositions = GetAllIndividualStockPositions(accounts, pricingEngine);
-            GraphSeries stocksWorth = GetGraphSeriesFromPositions(stockPositions, pricingEngine);
+            List<Position> stockPositions = GetAllIndividualStockPositions(accounts);
+            GraphSeries stocksWorth = GetGraphSeriesFromPositions(stockPositions);
             stocksWorth.name = "Individual stocks";
             stocksWorth.seriesPrefs = new SeriesPrefs()
             {
@@ -261,8 +260,8 @@ namespace Lib.Engine
             graphData.AddSeries(stocksWorth);
 
             // add index funds
-            List<Position> indexPositions = GetAllIndexedPositions(accounts, pricingEngine);
-            GraphSeries indexWorth = GetGraphSeriesFromPositions(indexPositions, pricingEngine);
+            List<Position> indexPositions = GetAllIndexedPositions(accounts);
+            GraphSeries indexWorth = GetGraphSeriesFromPositions(indexPositions);
             indexWorth.name = "Index funds";
             indexWorth.seriesPrefs = new SeriesPrefs()
             {
@@ -272,8 +271,8 @@ namespace Lib.Engine
             graphData.AddSeries(indexWorth);
 
             // add private assets
-            List<Position> privatePositions = GetAllPrivatePositions(accounts, pricingEngine);
-            GraphSeries privateWorth = GetGraphSeriesFromPositions(privatePositions, pricingEngine);
+            List<Position> privatePositions = GetAllPrivatePositions(accounts);
+            GraphSeries privateWorth = GetGraphSeriesFromPositions(privatePositions);
             privateWorth.name = "Private assets (less debt)";
             privateWorth.seriesPrefs = new SeriesPrefs()
             {
@@ -344,34 +343,34 @@ namespace Lib.Engine
 
             return totalWorth;
         }
-        private static List<Position> GetTaxablePositions(List<Account> accounts, PricingEngine pricingEngine)
+        private static List<Position> GetTaxablePositions(List<Account> accounts)
         {
 
-            List<InvestmentDuration> list = pricingEngine.GetPublicInvestmentDurationsFromAccounts(accounts);
+            List<InvestmentDuration> list = PricingEngine.GetPublicInvestmentDurationsFromAccounts(accounts);
             return GetPositionsFromInvestmentDurations(list, accounts);
         }
-        private static List<Position> GetAllIndexedPositions(List<Account> accounts, PricingEngine pricingEngine)
+        private static List<Position> GetAllIndexedPositions(List<Account> accounts)
         {
 
-            List<InvestmentDuration> list = pricingEngine.GetPublicInvestmentDurationsFromAccounts(accounts)
+            List<InvestmentDuration> list = PricingEngine.GetPublicInvestmentDurationsFromAccounts(accounts)
                 .Where(x => _mutualFunds.Contains(x.investmentVehicle.Symbol) == true).ToList();
 
             return GetPositionsFromInvestmentDurations(list, accounts);
         }
-        private static List<Position> GetAllIndividualStockPositions(List<Account> accounts, PricingEngine pricingEngine)
+        private static List<Position> GetAllIndividualStockPositions(List<Account> accounts)
         {
 
-            List<InvestmentDuration> list = pricingEngine.GetPublicInvestmentDurationsFromAccounts(accounts)
+            List<InvestmentDuration> list = PricingEngine.GetPublicInvestmentDurationsFromAccounts(accounts)
                 .Where(x => _mutualFunds.Contains(x.investmentVehicle.Symbol) == false).ToList();
 
             return GetPositionsFromInvestmentDurations(list, accounts);
         }
-        private static List<Position> GetAllPrivatePositions(List<Account> accounts, PricingEngine pricingEngine)
+        private static List<Position> GetAllPrivatePositions(List<Account> accounts)
         {
-            List<InvestmentDuration> list = pricingEngine.GetPrivateInvestmentDurationsFromAccounts(accounts);
+            List<InvestmentDuration> list = PricingEngine.GetPrivateInvestmentDurationsFromAccounts(accounts);
             return GetPositionsFromInvestmentDurations(list, accounts);
         }
-        private static GraphData GetGraphDataForEachSymbol(List<Position> positions, PricingEngine pricingEngine)
+        private static GraphData GetGraphDataForEachSymbol(List<Position> positions)
         {
             GraphData graphData = new GraphData(
                 TypeHelper.dateTimeOffsetType,
@@ -386,7 +385,7 @@ namespace Lib.Engine
             foreach (var symbolGroup in symbolGroups)
             {
                 string hexColor = ColorHelper.GetColor(i);
-                GraphSeries series = GetGraphSeriesFromPositions(symbolGroup.positionsAtSymbol.ToList(), pricingEngine);
+                GraphSeries series = GetGraphSeriesFromPositions(symbolGroup.positionsAtSymbol.ToList());
                 series.name = symbolGroup.symbol.Symbol.ToString();
                 series.seriesPrefs.strokeHexColor = hexColor;
                 series.seriesPrefs.strokeWidthInPx = 3d;
@@ -396,7 +395,7 @@ namespace Lib.Engine
 
             return graphData;
         }
-        private static GraphSeries GetGraphSeriesFromPositions(List<Position> positions, PricingEngine pricingEngine)
+        private static GraphSeries GetGraphSeriesFromPositions(List<Position> positions)
         {
             GraphSeries graphSeries = new GraphSeries();
             graphSeries.yType = TypeHelper.decimalType;
@@ -409,7 +408,7 @@ namespace Lib.Engine
                 {
                     try
                     {
-                        decimal priceAtDate = pricingEngine.GetPriceAtDate(
+                        decimal priceAtDate = PricingEngine.GetPriceAtDate(
                             position.InvestmentVehicle, position.Date).Price;
                         decimal value = priceAtDate * position.Quantity;
 

@@ -8,17 +8,14 @@ using System.Threading.Tasks;
 
 namespace Lib.Engine
 {
-    public class PricingEngine
+    public static class PricingEngine
     {
-        public List<Valuation> valuations { get { return _valuations; }  }
-        private List<Valuation> _valuations;
-        private HashSet<string> _problemSymbols;
+        private static List<Valuation> _valuations;
+        private static HashSet<string> _problemSymbols;
 
 
-        public PricingEngine(List<Valuation> valuations)
+        static PricingEngine()
         {
-            _valuations = valuations;
-
             // skip these symbols when looking up prices
             // because it seems tehy're not the right symbol and it just throws everything off
             _problemSymbols = new HashSet<string>();
@@ -26,7 +23,11 @@ namespace Lib.Engine
             _problemSymbols.Add("VINIX");
             _problemSymbols.Add("VEXMX");
         }
-        public List<Valuation> BlendPricesWithRealTransactions(List<Account> accounts)
+        public static void AddValuations(List<Valuation> valuations)
+        {
+            _valuations = valuations;
+        }
+        public static List<Valuation> BlendPricesWithRealTransactions(List<Account> accounts)
         {
             // use the real transactions to fill in days
             foreach (var account in accounts)
@@ -47,7 +48,7 @@ namespace Lib.Engine
             }
             return _valuations;
         }
-        public List<Valuation> BlendPricesDaily(List<Account> accounts)
+        public static List<Valuation> BlendPricesDaily(List<Account> accounts)
         {
             // now go through each security and fill in the blanks with trend lines
             // get a list of distinct securities from the prices list
@@ -122,7 +123,7 @@ namespace Lib.Engine
         /// </summary>
         /// <param name="accounts"></param>
         /// <returns>a caught up pricing list</returns>
-        public List<Valuation> CatchUpPrices(List<Account> accounts)
+        public static List<Valuation> CatchUpPrices(List<Account> accounts)
         {
             // get a list of distinct securities from the accounts list
             List<InvestmentDuration> list = GetPublicInvestmentDurationsFromAccounts(accounts);
@@ -179,7 +180,7 @@ namespace Lib.Engine
             
             return _valuations;
         }
-        public Valuation GetPriceAtDate(InvestmentVehicle vehicle, DateTimeOffset dateTime)
+        public static Valuation GetPriceAtDate(InvestmentVehicle vehicle, DateTimeOffset dateTime)
         {
             // check if already present
             var valuations = _valuations.Where(x =>
@@ -214,7 +215,7 @@ namespace Lib.Engine
             return new Valuation();
 
         }
-        public List<InvestmentDuration> GetPrivateInvestmentDurationsFromAccounts(List<Account> accounts)
+        public static List<InvestmentDuration> GetPrivateInvestmentDurationsFromAccounts(List<Account> accounts)
         {
             List<InvestmentDuration> returnList = new List<InvestmentDuration>();
 
@@ -239,7 +240,7 @@ namespace Lib.Engine
             }
             return returnList;
         }
-        public List<InvestmentDuration>GetPublicInvestmentDurationsFromAccounts(List<Account>accounts)
+        public static List<InvestmentDuration>GetPublicInvestmentDurationsFromAccounts(List<Account>accounts)
         {
             List<InvestmentDuration> returnList = new List<InvestmentDuration>();
 
@@ -262,12 +263,12 @@ namespace Lib.Engine
             }
             return returnList;
         }
-        public string[] GetUniqueSymbolsFromValuations()
+        public static string[] GetUniqueSymbolsFromValuations()
         {
             string[] symbols = _valuations.Select(x => x.InvestmentVehicle.Symbol).Distinct().ToArray();
             return symbols;
         }
-        public void PrintPrices()
+        public static void PrintPrices()
         {
             StringBuilder sb = new StringBuilder();
             sb.Append(string.Format("{0}\t", "DATE"));
@@ -323,7 +324,7 @@ namespace Lib.Engine
         }
 
 
-        private void CatchUpPrice(string symbol, DateTimeOffset begin, DateTimeOffset end)
+        private static void CatchUpPrice(string symbol, DateTimeOffset begin, DateTimeOffset end)
         {
             DateTimeOffset thisDate = begin;
             bool isPriceScrapeNeeded = false;
@@ -381,7 +382,7 @@ namespace Lib.Engine
 
             }
         }
-        private bool IsPriceAtDate(InvestmentVehicle vehicle, DateTimeOffset date)
+        private static bool IsPriceAtDate(InvestmentVehicle vehicle, DateTimeOffset date)
         {
             var nearEnoughPrices = _valuations.Where(
                 x => x.InvestmentVehicle == vehicle
@@ -389,7 +390,7 @@ namespace Lib.Engine
             if (nearEnoughPrices.Count() > 0) return true;
             return false;
         }
-        private bool IsPriceAtDate(string symbol, DateTimeOffset date)
+        private static bool IsPriceAtDate(string symbol, DateTimeOffset date)
         {
             var nearEnoughPrices = _valuations.Where(
                 x => x.InvestmentVehicle.Symbol == symbol
@@ -397,7 +398,7 @@ namespace Lib.Engine
             if (nearEnoughPrices.Count() > 0) return true;
             return false;
         }
-        private bool IsPriceNearDate(string symbol, DateTimeOffset date)
+        private static bool IsPriceNearDate(string symbol, DateTimeOffset date)
         {
             TimeSpan nearEnough = ConfigManager.GetTimeSpan("TimeSpanForDateNearnessEvaluation");
             var nearEnoughPrices = _valuations.Where(
