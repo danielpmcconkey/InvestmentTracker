@@ -479,7 +479,7 @@ namespace Lib
                 using (var cmd = new DbCommand(q, conn))
                 {
                     cmd.AddParameter(new DbCommandParameter() { ParameterName = "runid", DbType = ParamDbType.Uuid, Value = batch.runId });
-                    cmd.AddParameter(new DbCommandParameter() { ParameterName = "montecarloversion", DbType = ParamDbType.Varchar, Value = batch.monteCarloVersion });
+                    cmd.AddParameter(new DbCommandParameter() { ParameterName = "montecarloversion", DbType = ParamDbType.Varchar, Value = MonteCarloBatch.monteCarloVersion });
                     cmd.AddParameter(new DbCommandParameter() { ParameterName = "rundate", DbType = ParamDbType.Timestamp, Value = batch.runDate });
                     cmd.AddParameter(new DbCommandParameter() { ParameterName = "serializedself", DbType = ParamDbType.Text, Value = batch.serializeSelf() });
                     cmd.AddParameter(new DbCommandParameter() { ParameterName = "numberofsimstorun", DbType = ParamDbType.Integer, Value = batch.numberOfSimsToRun });
@@ -585,7 +585,7 @@ namespace Lib
                 using (DbCommand cmd = new DbCommand(q, conn))
                 {
                     cmd.AddParameter(new DbCommandParameter() { ParameterName = "runid", DbType = ParamDbType.Uuid, Value = batch.runId });
-                    cmd.AddParameter(new DbCommandParameter() { ParameterName = "montecarloversion", DbType = ParamDbType.Varchar, Value = batch.monteCarloVersion });
+                    cmd.AddParameter(new DbCommandParameter() { ParameterName = "montecarloversion", DbType = ParamDbType.Varchar, Value = MonteCarloBatch.monteCarloVersion });
                     cmd.AddParameter(new DbCommandParameter() { ParameterName = "rundate", DbType = ParamDbType.Timestamp, Value = batch.runDate });
                     cmd.AddParameter(new DbCommandParameter() { ParameterName = "serializedself", DbType = ParamDbType.Text, Value = batch.serializeSelf() });
                     cmd.AddParameter(new DbCommandParameter() { ParameterName = "numberofsimstorun", DbType = ParamDbType.Integer, Value = batch.numberOfSimsToRun });
@@ -681,11 +681,18 @@ namespace Lib
                     cmd.AddParameter(new DbCommandParameter { ParameterName = "socialSecurityCollectionAge", DbType = ParamDbType.Numeric, Value = simParams.socialSecurityCollectionAge });
                     cmd.AddParameter(new DbCommandParameter { ParameterName = "livingLargeThreashold", DbType = ParamDbType.Numeric, Value = simParams.livingLargeThreashold });
                     cmd.AddParameter(new DbCommandParameter { ParameterName = "livingLargeLifestyleSpendMultiplier", DbType = ParamDbType.Numeric, Value = simParams.livingLargeLifestyleSpendMultiplier });
-
-                    int numRowsAffected = PostgresDAL.executeNonQuery(cmd.npgsqlCommand);
-                    if (numRowsAffected != 1)
+                    try
                     {
-                        throw new Exception(string.Format("MonteCarloBatch.writeSelfToDb (parameters) data insert returned {0} rows. Expected 1.", numRowsAffected));
+                        int numRowsAffected = PostgresDAL.executeNonQuery(cmd.npgsqlCommand);
+                        if (numRowsAffected != 1)
+                        {
+                            throw new Exception(string.Format("MonteCarloBatch.writeSelfToDb (parameters) data insert returned {0} rows. Expected 1.", numRowsAffected));
+                        }
+                    }
+                    catch (Exception)
+                    {
+
+                        throw;
                     }
                 }
             }

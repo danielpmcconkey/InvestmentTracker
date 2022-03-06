@@ -10,7 +10,7 @@ namespace Utilities
     {
         public static decimal getRandomDecimal(decimal min, decimal max)
         {
-            decimal intToDoubleMultiplier = (decimal)100000; // just about guarantees a whole number
+            decimal intToDoubleMultiplier = (decimal)10000; // just about guarantees a whole number
             int bigMin = (int)(min * intToDoubleMultiplier);
             int bigMax = (int)(max * intToDoubleMultiplier);
             int bigRandom = getRandomInt(bigMin, bigMax);

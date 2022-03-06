@@ -11,8 +11,8 @@ namespace Lib.Engine.MonteCarlo
     public class MonteCarloBatch
     {
         public Guid runId { get; set; }
-        public string monteCarloVersion { get { return _monteCarloVersion; } set { } }
-        private const string _monteCarloVersion = "2022.02.23.014";
+        //public string monteCarloVersion { get { return _monteCarloVersion; } set { } }
+        public const string monteCarloVersion = "2022.02.23.014";
         public DateTime runDate { get; set; }
         public SimulationParameters simParams { get; set; }
         public List<SimulationRunResult> simRuns { get; set; }

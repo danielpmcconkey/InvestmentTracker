@@ -23,7 +23,7 @@ namespace Utilities
              * use the format: 
              *  secretsDict.Add("name", "value");
             */
-            
+
             /*
              * MAKE DAMN SURE YOU REMOVE IT BEFORE COMMITTING
              * 
