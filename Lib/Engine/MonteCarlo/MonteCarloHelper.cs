@@ -18,29 +18,29 @@ namespace Lib.Engine.MonteCarlo
         {
             var assetsGoingIn = CreateSimAssetsFromAccounts(accounts);
 
-            var batches = DataAccessLayer.getTopNRunsWithRunCountLessThanY(numBatchesToRun, 1100, monteCarloVersion);
+            var batches = DataAccessLayer.GetRunsToEvolve(numBatchesToRun, 1100, monteCarloVersion);
             foreach (var batch in batches)
             {
-                MonteCarloBatch evolvedBatch = EvolveBatch(batch.Item2);
+                Guid oldId = batch.runId;
+                MonteCarloBatch evolvedBatch = EvolveBatch(batch);
                 evolvedBatch.assetsGoingIn = assetsGoingIn;
                 evolvedBatch.numberOfSimsToRun = 1000;
                 evolvedBatch.runBatch();
+                Logger.info(String.Format("Evolved {0} into {1}", oldId.ToString(),
+                    batch.runId.ToString()));
             }
 
         }
         public static void ExtendBestRuns(string monteCarloVersion, List<Account> accounts)
         {
             var assetsGoingIn = CreateSimAssetsFromAccounts(accounts);
-            var batches = DataAccessLayer.getTopNRunsWithRunCountLessThanY(10, 1100, monteCarloVersion);
+            var batches = DataAccessLayer.GetRunsToExtend(10, 1100, monteCarloVersion);
             foreach (var batch in batches)
             {
-                Guid oldId = batch.Item1;
-                batch.Item2.runId = Guid.NewGuid();   // create a new GUID for this run
-                batch.Item2.numberOfSimsToRun = 20000;
-                batch.Item2.runBatch();
-                batch.Item2.assetsGoingIn = assetsGoingIn;
-                Logger.info(String.Format("Extended sim runs for {0} with {1}", oldId.ToString(),
-                    batch.Item2.runId.ToString()));
+                batch.runId = Guid.NewGuid();   // create a new GUID for this run
+                batch.numberOfSimsToRun = 20000;
+                batch.assetsGoingIn = assetsGoingIn;
+                batch.runBatch();
             }
         }
         public static List<Decimal> GetGradientBetweenMinAndMax(decimal minValue, decimal maxValue, int numberOfGrades)
@@ -151,6 +151,9 @@ namespace Lib.Engine.MonteCarlo
         }
         public static void RunMonteCarloBatches(int numBatches, List<Account> accounts)
         {
+
+            for (int i = 0; i < numBatches; i++)
+            {
             // pull from default configs
             var retirementDate = ConfigManager.GetDateTime("RetirementDate");
             var birthDate = ConfigManager.GetDateTime("BirthDate");
@@ -178,9 +181,6 @@ namespace Lib.Engine.MonteCarlo
             var livingLargeThreashold = ConfigManager.GetDecimal("livingLargeThreashold");
             var livingLargeLifestyleSpendMultiplier = ConfigManager.GetDecimal("livingLargeLifestyleSpendMultiplier");
 
-            for (int i = 0; i < numBatches; i++)
-            {
-
                 // now randomize some
                 monthlySpendLifeStyleToday = RNG.getRandomDecimal(
                     monthlySpendLifeStyleToday * 0.5M, monthlySpendLifeStyleToday * 2M);
@@ -188,16 +188,8 @@ namespace Lib.Engine.MonteCarlo
                     xMinusAgeStockPercentPreRetirement * 0.5M, xMinusAgeStockPercentPreRetirement * 2M);
                 numYearsCashBucketInRetirement = RNG.getRandomDecimal(
                     numYearsCashBucketInRetirement * 0.25M, numYearsCashBucketInRetirement * 4M);
-                if(numYearsCashBucketInRetirement >= 100)
-                {
-                    throw new Exception("WTF?");
-                }
                 numYearsBondBucketInRetirement = RNG.getRandomDecimal(
                     numYearsBondBucketInRetirement * 0.25M, numYearsBondBucketInRetirement * 4M);
-                if (numYearsBondBucketInRetirement >= 100)
-                {
-                    throw new Exception("WTF?");
-                }
                 recessionRecoveryPercent = RNG.getRandomDecimal(0.8M, 1.25M);
                 shouldMoveEquitySurplussToFillBondGapAlways = RNG.getRandomBool();
                 recessionLifestyleAdjustment = RNG.getRandomDecimal(0.0M, 1.0M);

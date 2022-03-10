@@ -376,9 +376,9 @@ namespace Lib
             }
             return outList;
         }
-        public static List<(Guid, MonteCarloBatch)> getTopNRunsWithRunCountLessThanY(int N, int Y, string monteCarloVersion)
+        public static List<MonteCarloBatch> GetRunsToEvolve(int N, int Y, string monteCarloVersion)
         {
-            List<(Guid, MonteCarloBatch)> outList = new List<(Guid, MonteCarloBatch)>();
+            List<MonteCarloBatch> outList = new List<MonteCarloBatch>();
 
             using (var conn = PostgresDAL.getConnection())
             {
@@ -394,7 +394,7 @@ namespace Lib
                     limit(@N)
                     ;
                 ";
-                
+
                 PostgresDAL.openConnection(conn);
                 using (DbCommand cmd = new DbCommand(query, conn))
                 {
@@ -426,7 +426,140 @@ namespace Lib
                             Guid runId = PostgresDAL.getGuid(reader, "runid");
                             var batch = DataAccessLayer.DeserializeMonteCarloBatch(
                                 PostgresDAL.getString(reader, "serializedself"));
-                            outList.Add((runId, batch));
+                            outList.Add(batch);
+                        }
+                    }
+                }
+            }
+
+            return outList;
+
+        }
+        public static List<MonteCarloBatch> GetRunsToExtend(int N, int Y, string monteCarloVersion)
+        {
+            List<MonteCarloBatch> outList = new List<MonteCarloBatch>();
+
+            using (var conn = PostgresDAL.getConnection())
+            {
+                string query = @"
+                    SELECT 
+                        sum(b.numberofsimstorun) as numRunsTotal,
+                        avg((b.analytics->'averageLifeStyleSpendBadYears')::varchar(17)::numeric(14,2)) as averageLifeStyleSpendBadYears,
+                        avg((b.analytics->'successRateBadYears')::varchar(17)::numeric(4,3)) as successRateBadYears,
+                        p.retirementdate,
+                        p.monthlySpendLifeStyleToday,
+                        p.monthlySpendCoreToday,
+                        p.xMinusAgeStockPercentPreRetirement,
+                        p.numYearsCashBucketInRetirement ,
+                        p.numYearsBondBucketInRetirement ,
+                        p.recessionRecoveryPercent ,
+                        p.shouldMoveEquitySurplussToFillBondGapAlways,
+                        p.recessionLifestyleAdjustment,
+                        p.retirementLifestyleAdjustment,
+                        p.livingLargeThreashold,
+                        p.livingLargeLifestyleSpendMultiplier,
+                        p.monthlyInvestRoth401k,
+                        p.monthlyInvestTraditional401k,
+                        p.monthlyInvestBrokerage,
+                        p.monthlyInvestHSA,
+                        p.annualRSUInvestmentPreTax,
+                        p.deathAgeOverride,
+                        p.maxSpendingPercentWhenBelowRetirementLevelEquity,
+                        p.annualInflationLow,
+                        p.annualInflationHi,
+                        p.socialSecurityCollectionAge
+                    FROM investmenttracker.montecarlobatch b
+                    left join investmenttracker.montecarlosimparameters p on b.runid = p.runid
+                    where 1=1
+                    and b.montecarloversion = @monteCarloVersion
+                    group by
+                        p.retirementdate,
+                        p.monthlySpendLifeStyleToday,
+                        p.monthlySpendCoreToday,
+                        p.xMinusAgeStockPercentPreRetirement,
+                        p.numYearsCashBucketInRetirement ,
+                        p.numYearsBondBucketInRetirement ,
+                        p.recessionRecoveryPercent ,
+                        p.shouldMoveEquitySurplussToFillBondGapAlways,
+                        p.recessionLifestyleAdjustment,
+                        p.retirementLifestyleAdjustment,
+                        p.livingLargeThreashold,
+                        p.livingLargeLifestyleSpendMultiplier,
+                        p.monthlyInvestRoth401k,
+                        p.monthlyInvestTraditional401k,
+                        p.monthlyInvestBrokerage,
+                        p.monthlyInvestHSA,
+                        p.annualRSUInvestmentPreTax,
+                        p.deathAgeOverride,
+                        p.maxSpendingPercentWhenBelowRetirementLevelEquity,
+                        p.annualInflationLow,
+                        p.annualInflationHi,
+                        p.socialSecurityCollectionAge
+                    having sum(b.numberofsimstorun) < @Y
+                    order by avg((b.analytics->'averageLifeStyleSpendSuccessfulBadYears')::varchar(17)::numeric * (b.analytics->'successRateBadYears')::varchar(17)::numeric) desc
+                    limit (@N)
+                    ;
+                ";
+                
+                PostgresDAL.openConnection(conn);
+                using (DbCommand cmd = new DbCommand(query, conn))
+                {
+                    cmd.AddParameter(new DbCommandParameter()
+                    {
+                        ParameterName = "monteCarloVersion",
+                        DbType = ParamDbType.Varchar,
+                        Value = monteCarloVersion
+                    }
+                    );
+                    cmd.AddParameter(new DbCommandParameter()
+                    {
+                        ParameterName = "Y",
+                        DbType = ParamDbType.Integer,
+                        Value = Y
+                    }
+                    );
+                    cmd.AddParameter(new DbCommandParameter()
+                    {
+                        ParameterName = "N",
+                        DbType = ParamDbType.Integer,
+                        Value = N
+                    }
+                    );
+                    using (var reader = PostgresDAL.executeReader(cmd.npgsqlCommand))
+                    {
+                        while (reader.Read())
+                        {
+                            MonteCarloBatch batch = new MonteCarloBatch();
+                            batch.simParams = new SimulationParameters()
+                            {
+                                startDate = DateTime.Now.Date,
+                                retirementDate = PostgresDAL.getDateTime(reader, "retirementdate", DateTimeKind.Unspecified),
+                                monthlySpendLifeStyleToday = PostgresDAL.getDecimal(reader, "monthlySpendLifeStyleToday"),
+                                monthlySpendCoreToday = PostgresDAL.getDecimal(reader, "monthlySpendCoreToday"),
+                                xMinusAgeStockPercentPreRetirement = PostgresDAL.getDecimal(reader, "xMinusAgeStockPercentPreRetirement"),
+                                numYearsCashBucketInRetirement = PostgresDAL.getDecimal(reader, "numYearsCashBucketInRetirement"),
+                                numYearsBondBucketInRetirement = PostgresDAL.getDecimal(reader, "numYearsBondBucketInRetirement"),
+                                recessionRecoveryPercent = PostgresDAL.getDecimal(reader, "recessionRecoveryPercent"),
+                                shouldMoveEquitySurplussToFillBondGapAlways = PostgresDAL.getBool(reader, "shouldMoveEquitySurplussToFillBondGapAlways"),
+                                recessionLifestyleAdjustment = PostgresDAL.getDecimal(reader, "recessionLifestyleAdjustment"),
+                                retirementLifestyleAdjustment = PostgresDAL.getDecimal(reader, "retirementLifestyleAdjustment"),
+                                livingLargeThreashold = PostgresDAL.getDecimal(reader, "livingLargeThreashold"),
+                                livingLargeLifestyleSpendMultiplier = PostgresDAL.getDecimal(reader, "livingLargeLifestyleSpendMultiplier"),
+                                monthlyInvestRoth401k = PostgresDAL.getDecimal(reader, "monthlyInvestRoth401k"),
+                                monthlyInvestTraditional401k = PostgresDAL.getDecimal(reader, "monthlyInvestTraditional401k"),
+                                monthlyInvestBrokerage = PostgresDAL.getDecimal(reader, "monthlyInvestBrokerage"),
+                                monthlyInvestHSA = PostgresDAL.getDecimal(reader, "monthlyInvestHSA"),
+                                annualRSUInvestmentPreTax = PostgresDAL.getDecimal(reader, "annualRSUInvestmentPreTax"),
+                                deathAgeOverride = PostgresDAL.getInt(reader, "deathAgeOverride"),
+                                maxSpendingPercentWhenBelowRetirementLevelEquity = PostgresDAL.getDecimal(reader, "maxSpendingPercentWhenBelowRetirementLevelEquity"),
+                                annualInflationLow = PostgresDAL.getDecimal(reader, "annualInflationLow"),
+                                annualInflationHi = PostgresDAL.getDecimal(reader, "annualInflationHi"),
+                                socialSecurityCollectionAge = PostgresDAL.getDecimal(reader, "socialSecurityCollectionAge"),
+                                birthDate = ConfigManager.GetDateTime("BirthDate"),
+                                monthlyGrossIncomePreRetirement = ConfigManager.GetDecimal("AnnualIncome") / 12.0m,
+                                monthlyNetSocialSecurityIncome = ConfigManager.GetDecimal("monthlyNetSocialSecurityIncome"),
+                            };
+                            outList.Add(batch);
                         }
                     }
                 }

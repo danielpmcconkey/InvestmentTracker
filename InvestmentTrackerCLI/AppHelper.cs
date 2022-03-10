@@ -74,7 +74,7 @@ namespace InvestmentTrackerCLI
         {
             Logger.info("Beginning run.");
 
-            //ConfigManager.ReWriteSecrets(); 
+            // ConfigManager.ReWriteSecrets(); 
 
 
             try
@@ -282,16 +282,19 @@ namespace InvestmentTrackerCLI
                 WriteHTMLFile(sbOutput, captionWidth);
                 if (FEATURETOGGLE.SHOULDRUNMONTECARLOBATCHES)
                 {
-                    Logger.info("Running Monte Carlo batches (totally random)");
-                    int numBatchesToRun = ConfigManager.GetInt("numMonteCarloBatchesToRun");
-                    MonteCarloHelper.RunMonteCarloBatches(numBatchesToRun, accounts);
-                    Logger.info("Finished running Monte Carlo batches (totally random)");
-                    Logger.info("Evolving Monte Carlo batches");
-                    MonteCarloHelper.EvolveBestRuns(MonteCarloBatch.monteCarloVersion, numBatchesToRun, accounts);
-                    Logger.info("Finished evolving Monte Carlo batches");
-                    Logger.info("Extending best Monte Carlo batches");
-                    MonteCarloHelper.ExtendBestRuns(MonteCarloBatch.monteCarloVersion, accounts);
-                    Logger.info("Finished extending best Monte Carlo batches");
+                    while (DateTime.Now < DateTime.Today.AddHours(23))
+                    {
+                        Logger.info("Running Monte Carlo batches (totally random)");
+                        int numBatchesToRun = ConfigManager.GetInt("numMonteCarloBatchesToRun");
+                        MonteCarloHelper.RunMonteCarloBatches(numBatchesToRun, accounts);
+                        Logger.info("Finished running Monte Carlo batches (totally random)");
+                        Logger.info("Evolving Monte Carlo batches");
+                        MonteCarloHelper.EvolveBestRuns(MonteCarloBatch.monteCarloVersion, numBatchesToRun, accounts);
+                        Logger.info("Finished evolving Monte Carlo batches");
+                        Logger.info("Extending best Monte Carlo batches");
+                        MonteCarloHelper.ExtendBestRuns(MonteCarloBatch.monteCarloVersion, accounts);
+                        Logger.info("Finished extending best Monte Carlo batches");
+                    }
                 }
 
             }

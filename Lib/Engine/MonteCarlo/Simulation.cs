@@ -699,6 +699,7 @@ namespace Lib.Engine.MonteCarlo
             long targetCashAmount = Convert.ToInt64(Math.Round(numYearsCashBucketInRetirement * yearlySpend));
             long targetBondAmount = Convert.ToInt64(Math.Round(numYearsBondBucketInRetirement * yearlySpend));
             long cashNeeded = targetCashAmount - totalCashOnHand;
+            if(cashNeeded < 0) cashNeeded = 0;
             long totalEquitiesWorth = 0;
             long totalBondsWorth = 0;
 
@@ -734,15 +735,39 @@ namespace Lib.Engine.MonteCarlo
                 if (totalEquitiesWorth >= cashNeeded)
                 {
                     logicTrace("rebalanceBuckets", String.Format("pulling cash needed ({0}) from equities; ", (cashNeeded *0.0001).ToString("c")));
-                    drawFromInvestments(cashNeeded, InvestmentIndex.EQUITY);
+                    try
+                    {
+                        drawFromInvestments(cashNeeded, InvestmentIndex.EQUITY);
+                    }
+                    catch (Exception)
+                    {
+
+                        throw;
+                    }
                 }
                 else
                 {
                     // pull what you can from stocks and the rest from bonds
                     logicTrace("rebalanceBuckets", String.Format("pulling everything I can ({0}) from equities ", (totalEquitiesWorth * 0.0001).ToString("c")));
-                    drawFromInvestments(totalEquitiesWorth, InvestmentIndex.EQUITY);
+                    try
+                    {
+                        drawFromInvestments(totalEquitiesWorth, InvestmentIndex.EQUITY);
+                    }
+                    catch (Exception)
+                    {
+
+                        throw;
+                    }
                     logicTrace("rebalanceBuckets", String.Format("and the rest ({0}) from bonds; ", (cashNeeded - totalEquitiesWorth * 0.0001).ToString("c")));
-                    drawFromInvestments(cashNeeded - totalEquitiesWorth, InvestmentIndex.BOND);
+                    try
+                    {
+                        drawFromInvestments(cashNeeded - totalEquitiesWorth, InvestmentIndex.BOND);
+                    }
+                    catch (Exception)
+                    {
+
+                        throw;
+                    }
                 }
                 
                 topOffBondBucket(targetBondAmount);
@@ -765,7 +790,15 @@ namespace Lib.Engine.MonteCarlo
                 {
                     // pull from bonds, give equity more time to heal
                     logicTrace("rebalanceBuckets", String.Format("haven't finished recovering from prior recessions. pulling cash needed ({0}) from bonds; ", (cashNeeded * 0.0001).ToString("c")));
-                    drawFromInvestments(cashNeeded, InvestmentIndex.BOND);
+                    try
+                    {
+                        drawFromInvestments(cashNeeded, InvestmentIndex.BOND);
+                    }
+                    catch (Exception)
+                    {
+
+                        throw;
+                    }
                 }
                 else
                 {
@@ -776,15 +809,39 @@ namespace Lib.Engine.MonteCarlo
                     if (totalEquitiesWorth >= cashNeeded)
                     {
                         logicTrace("rebalanceBuckets", String.Format("recovered from prior recessions; pulling cash needed ({0}) from equities; ", (cashNeeded * 0.0001).ToString("c")));
-                        drawFromInvestments(cashNeeded, InvestmentIndex.EQUITY);
+                        try
+                        {
+                            drawFromInvestments(cashNeeded, InvestmentIndex.EQUITY);
+                        }
+                        catch (Exception)
+                        {
+
+                            throw;
+                        }
                     }
                     else
                     {
                         // pull what you can from stocks and the rest from bonds
                         logicTrace("rebalanceBuckets", String.Format("recovered from prior recessions; pulling everything I can from ({0}) from equities ", (totalEquitiesWorth * 0.0001).ToString("c")));
-                        drawFromInvestments(totalEquitiesWorth, InvestmentIndex.EQUITY);
+                        try
+                        {
+                            drawFromInvestments(totalEquitiesWorth, InvestmentIndex.EQUITY);
+                        }
+                        catch (Exception)
+                        {
+
+                            throw;
+                        }
                         logicTrace("rebalanceBuckets", String.Format("and the rest ({0}) from bonds; ", (cashNeeded - totalEquitiesWorth * 0.0001).ToString("c")));
-                        drawFromInvestments(cashNeeded - totalEquitiesWorth, InvestmentIndex.BOND);
+                        try
+                        {
+                            drawFromInvestments(cashNeeded - totalEquitiesWorth, InvestmentIndex.BOND);
+                        }
+                        catch (Exception)
+                        {
+
+                            throw;
+                        }
                     }
                     // now top off bonds
                     totalBondsWorth = assets
