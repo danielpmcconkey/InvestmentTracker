@@ -568,6 +568,23 @@ namespace Lib
             return outList;
 
         }
+        public static bool IsClutchOn()
+        {
+            using (var conn = PostgresDAL.getConnection())
+            {
+                string query = @"
+                    select isclutchon 
+                    from investmenttracker.clutch
+                    limit 1;                ";
+
+                PostgresDAL.openConnection(conn);
+                using (DbCommand cmd = new DbCommand(query, conn))
+                {
+                    bool isOn = (bool) PostgresDAL.executeScalar(cmd.npgsqlCommand);
+                    return isOn;
+                }
+            }
+        }
         public static MonteCarloBatch readAndDeserializeMCBatchFromDb(Guid runId)
         {
             using (var conn = PostgresDAL.getConnection())

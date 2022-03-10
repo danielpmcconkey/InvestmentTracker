@@ -282,8 +282,10 @@ namespace InvestmentTrackerCLI
                 WriteHTMLFile(sbOutput, captionWidth);
                 if (FEATURETOGGLE.SHOULDRUNMONTECARLOBATCHES)
                 {
-                    while (DateTime.Now < DateTime.Today.AddHours(23))
+                    while (true)
                     {
+                        // repeat forever, but check the clutch throughout
+
                         Logger.info("Running Monte Carlo batches (totally random)");
                         int numBatchesToRun = ConfigManager.GetInt("numMonteCarloBatchesToRun");
                         MonteCarloHelper.RunMonteCarloBatches(numBatchesToRun, accounts);

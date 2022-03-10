@@ -21,6 +21,8 @@ namespace Lib.Engine.MonteCarlo
             var batches = DataAccessLayer.GetRunsToEvolve(numBatchesToRun, 1100, monteCarloVersion);
             foreach (var batch in batches)
             {
+                CheckClucth();
+
                 Guid oldId = batch.runId;
                 MonteCarloBatch evolvedBatch = EvolveBatch(batch);
                 evolvedBatch.assetsGoingIn = assetsGoingIn;
@@ -37,6 +39,8 @@ namespace Lib.Engine.MonteCarlo
             var batches = DataAccessLayer.GetRunsToExtend(10, 1100, monteCarloVersion);
             foreach (var batch in batches)
             {
+                CheckClucth();
+
                 batch.runId = Guid.NewGuid();   // create a new GUID for this run
                 batch.numberOfSimsToRun = 20000;
                 batch.assetsGoingIn = assetsGoingIn;
@@ -113,6 +117,8 @@ namespace Lib.Engine.MonteCarlo
         }
         public static MonteCarloBatch RunMonteCarlo(List<Account> accounts)
         {
+            CheckClucth();
+
             SimulationParameters simParams = new SimulationParameters()
             {
                 startDate = DateTime.Now.Date,
@@ -154,32 +160,34 @@ namespace Lib.Engine.MonteCarlo
 
             for (int i = 0; i < numBatches; i++)
             {
-            // pull from default configs
-            var retirementDate = ConfigManager.GetDateTime("RetirementDate");
-            var birthDate = ConfigManager.GetDateTime("BirthDate");
-            var monthlyGrossIncomePreRetirement = ConfigManager.GetDecimal("AnnualIncome") / 12.0m;
-            var monthlyNetSocialSecurityIncome = ConfigManager.GetDecimal("monthlyNetSocialSecurityIncome");
-            var monthlySpendLifeStyleToday = ConfigManager.GetDecimal("monthlySpendLifeStyleToday");
-            var monthlySpendCoreToday = ConfigManager.GetDecimal("monthlySpendCoreToday");
-            var monthlyInvestRoth401k = ConfigManager.GetDecimal("monthlyInvestRoth401k");
-            var monthlyInvestTraditional401k = ConfigManager.GetDecimal("monthlyInvestTraditional401k");
-            var monthlyInvestBrokerage = ConfigManager.GetDecimal("monthlyInvestBrokerage");
-            var monthlyInvestHSA = ConfigManager.GetDecimal("monthlyInvestHSA");
-            var annualRSUInvestmentPreTax = ConfigManager.GetDecimal("annualRSUInvestmentPreTax");
-            var xMinusAgeStockPercentPreRetirement = ConfigManager.GetDecimal("xMinusAgeStockPercentPreRetirement");
-            var numYearsCashBucketInRetirement = ConfigManager.GetDecimal("numYearsCashBucketInRetirement");
-            var numYearsBondBucketInRetirement = ConfigManager.GetDecimal("numYearsBondBucketInRetirement");
-            var recessionRecoveryPercent = ConfigManager.GetDecimal("recessionRecoveryPercent");
-            var shouldMoveEquitySurplussToFillBondGapAlways = ConfigManager.GetBool("shouldMoveEquitySurplussToFillBondGapAlways");
-            var deathAgeOverride = ConfigManager.GetInt("deathAgeOverride");
-            var recessionLifestyleAdjustment = ConfigManager.GetDecimal("recessionLifestyleAdjustment");
-            var retirementLifestyleAdjustment = ConfigManager.GetDecimal("retirementLifestyleAdjustment");
-            var maxSpendingPercentWhenBelowRetirementLevelEquity = ConfigManager.GetDecimal("maxSpendingPercentWhenBelowRetirementLevelEquity");
-            var annualInflationLow = ConfigManager.GetDecimal("annualInflationLow");
-            var annualInflationHi = ConfigManager.GetDecimal("annualInflationHi");
-            var socialSecurityCollectionAge = ConfigManager.GetDecimal("socialSecurityCollectionAge");
-            var livingLargeThreashold = ConfigManager.GetDecimal("livingLargeThreashold");
-            var livingLargeLifestyleSpendMultiplier = ConfigManager.GetDecimal("livingLargeLifestyleSpendMultiplier");
+                CheckClucth();
+
+                // pull from default configs
+                var retirementDate = ConfigManager.GetDateTime("RetirementDate");
+                var birthDate = ConfigManager.GetDateTime("BirthDate");
+                var monthlyGrossIncomePreRetirement = ConfigManager.GetDecimal("AnnualIncome") / 12.0m;
+                var monthlyNetSocialSecurityIncome = ConfigManager.GetDecimal("monthlyNetSocialSecurityIncome");
+                var monthlySpendLifeStyleToday = ConfigManager.GetDecimal("monthlySpendLifeStyleToday");
+                var monthlySpendCoreToday = ConfigManager.GetDecimal("monthlySpendCoreToday");
+                var monthlyInvestRoth401k = ConfigManager.GetDecimal("monthlyInvestRoth401k");
+                var monthlyInvestTraditional401k = ConfigManager.GetDecimal("monthlyInvestTraditional401k");
+                var monthlyInvestBrokerage = ConfigManager.GetDecimal("monthlyInvestBrokerage");
+                var monthlyInvestHSA = ConfigManager.GetDecimal("monthlyInvestHSA");
+                var annualRSUInvestmentPreTax = ConfigManager.GetDecimal("annualRSUInvestmentPreTax");
+                var xMinusAgeStockPercentPreRetirement = ConfigManager.GetDecimal("xMinusAgeStockPercentPreRetirement");
+                var numYearsCashBucketInRetirement = ConfigManager.GetDecimal("numYearsCashBucketInRetirement");
+                var numYearsBondBucketInRetirement = ConfigManager.GetDecimal("numYearsBondBucketInRetirement");
+                var recessionRecoveryPercent = ConfigManager.GetDecimal("recessionRecoveryPercent");
+                var shouldMoveEquitySurplussToFillBondGapAlways = ConfigManager.GetBool("shouldMoveEquitySurplussToFillBondGapAlways");
+                var deathAgeOverride = ConfigManager.GetInt("deathAgeOverride");
+                var recessionLifestyleAdjustment = ConfigManager.GetDecimal("recessionLifestyleAdjustment");
+                var retirementLifestyleAdjustment = ConfigManager.GetDecimal("retirementLifestyleAdjustment");
+                var maxSpendingPercentWhenBelowRetirementLevelEquity = ConfigManager.GetDecimal("maxSpendingPercentWhenBelowRetirementLevelEquity");
+                var annualInflationLow = ConfigManager.GetDecimal("annualInflationLow");
+                var annualInflationHi = ConfigManager.GetDecimal("annualInflationHi");
+                var socialSecurityCollectionAge = ConfigManager.GetDecimal("socialSecurityCollectionAge");
+                var livingLargeThreashold = ConfigManager.GetDecimal("livingLargeThreashold");
+                var livingLargeLifestyleSpendMultiplier = ConfigManager.GetDecimal("livingLargeLifestyleSpendMultiplier");
 
                 // now randomize some
                 monthlySpendLifeStyleToday = RNG.getRandomDecimal(
@@ -245,13 +253,19 @@ namespace Lib.Engine.MonteCarlo
                 i++;
                 if (i % 100 == 0) Logger.info(String.Format("Updated {0} analytics rows", i));
             }
-
         }
         #endregion
 
 
 
         #region private methods
+        private static void CheckClucth()
+        {
+            if (!DataAccessLayer.IsClutchOn()) return;
+            Logger.info("Paused while clutch is enabled.");
+            System.Threading.Thread.Sleep(ConfigManager.GetTimeSpan("clutchSleepCheck"));
+            CheckClucth();
+        }
         private static List<Asset> CreateSimAssetsFromAccounts(List<Account> accounts)
         {
             List<Asset> assetsGoingIn = new List<Asset>();
