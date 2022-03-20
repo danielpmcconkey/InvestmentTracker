@@ -74,8 +74,9 @@ namespace Lib
                         while (reader.Read())
                         {
                             isMatch = true;
-                            v.Id = PostgresDAL.getGuid(reader, "id");
-                            v.Price = PostgresDAL.getDecimal(reader, "price");
+                            // don't update the price. assume the one you just pulled is more accurate
+                            //v.Id = PostgresDAL.getGuid(reader, "id");
+                            //v.Price = PostgresDAL.getDecimal(reader, "price");
                         }
                     }
                 }
@@ -184,6 +185,30 @@ namespace Lib
 
             return outList;
         }
+        public static List<Asset> ReadSimAssetsFromDb()
+        {
+            List<Asset> outList = new List<Asset>();
+            using (var conn = PostgresDAL.getConnection())
+            {
+                string query = @"
+                    select serializedself from investmenttracker.simassets;";
+                PostgresDAL.openConnection(conn);
+                using (DbCommand cmd = new DbCommand(query, conn))
+                {
+                    using (var reader = PostgresDAL.executeReader(cmd.npgsqlCommand))
+                    {
+                        while (reader.Read())
+                        {
+                            string jsonString = PostgresDAL.getString(reader, "serializedself");
+                            Asset a = DeserializeType<Asset>(jsonString);
+                            outList.Add(a);
+                        }
+                    }
+                }
+            }
+
+            return outList;
+        }
         public static List<Valuation> ReadValuationsFromDb()
         {
             List<Valuation> outList = new List<Valuation>();
@@ -218,8 +243,69 @@ namespace Lib
 
             return outList;
         }
-        
-        
+        public static void OverwriteSimAssets(List<Asset>newAssets)
+        {
+            StringBuilder sb = new StringBuilder();
+            sb.AppendLine("begin transaction;");
+            sb.AppendLine("delete from investmenttracker.simassets;");
+            List<DbCommandParameter> parameters = new List<DbCommandParameter>();
+            for(int i = 0; i < newAssets.Count; i++)
+            {
+                sb.AppendLine(
+                    string.Format("insert into investmenttracker.simassets(serializedself) values(@asset{0});", i));
+                parameters.Add(new DbCommandParameter 
+                { 
+                    ParameterName = string.Format("asset{0}", i), 
+                    DbType = ParamDbType.Json, 
+                    Value = SerializeType<Asset>(newAssets[i])
+                });
+            }            
+            sb.AppendLine("commit transaction;");
+            using (var conn = PostgresDAL.getConnection())
+            {
+                PostgresDAL.openConnection(conn);
+                using (DbCommand cmd = new DbCommand(sb.ToString(), conn))
+                {
+                    for (int i = 0; i < newAssets.Count; i++)
+                    {
+                        cmd.AddParameter(new DbCommandParameter
+                        {
+                            ParameterName = string.Format("asset{0}", i),
+                            DbType = ParamDbType.Json,
+                            Value = SerializeType<Asset>(newAssets[i])
+                        });
+                    }
+                    
+                    int numRowsAffected = PostgresDAL.executeNonQuery(cmd.npgsqlCommand);
+                    Logger.info(string.Format("OverwriteSimAssets ran with {0} rows affected", numRowsAffected));
+                }
+            }
+        }
+        public static void UpdateValuationInDb(Valuation v)
+        {
+            using (var conn = PostgresDAL.getConnection())
+            {
+                string qParams = @"
+                    update investmenttracker.valuation set price = @price
+                    where investmentvehicle = @investmentvehicle
+                    and valdate = @valdate
+                        ";
+                PostgresDAL.openConnection(conn);
+                using (DbCommand cmd = new DbCommand(qParams, conn))
+                {
+                    cmd.AddParameter(new DbCommandParameter() { ParameterName = "investmentvehicle", DbType = ParamDbType.Uuid, Value = v.InvestmentVehicle.Id });
+                    cmd.AddParameter(new DbCommandParameter { ParameterName = "valdate", DbType = ParamDbType.Timestamp, Value = v.Date.DateTime });
+                    cmd.AddParameter(new DbCommandParameter { ParameterName = "price", DbType = ParamDbType.Numeric, Value = v.Price });
+
+                    int numRowsAffected = PostgresDAL.executeNonQuery(cmd.npgsqlCommand);
+                    if (numRowsAffected != 1)
+                    {
+                        throw new Exception(string.Format("WriteNewValuationToDb data insert returned {0} rows. Expected 1.", numRowsAffected));
+                    }
+                }
+            }
+
+        }
         public static void WriteNewAccountToDb(Account a)
         {
             using (var conn = PostgresDAL.getConnection())
@@ -376,8 +462,10 @@ namespace Lib
             }
             return outList;
         }
-        public static List<MonteCarloBatch> GetRunsToEvolve(int N, int Y, string monteCarloVersion)
+        public static List<MonteCarloBatch> GetRunsToEvolve(int numRowsToReturn, string monteCarloVersion)
         {
+            int maxSimsAlreadyRun = 1100;
+            decimal minSuccessRate = 0.8M;
             List<MonteCarloBatch> outList = new List<MonteCarloBatch>();
 
             using (var conn = PostgresDAL.getConnection())
@@ -389,9 +477,10 @@ namespace Lib
                     FROM investmenttracker.montecarlobatch b
                     where 1=1
                     and b.montecarloversion = @monteCarloVersion
-                    and numberofsimstorun < @Y
+                    and numberofsimstorun < @maxSimsAlreadyRun
+                    and (b.analytics->'successRateBadYears')::varchar(17)::numeric(4,3) >= @minSuccessRate
                     order by ((b.analytics->'averageLifeStyleSpendSuccessfulBadYears')::varchar(17)::numeric * (b.analytics->'successRateBadYears')::varchar(17)::numeric) desc
-                    limit(@N)
+                    limit(@numRowsToReturn)
                     ;
                 ";
 
@@ -407,16 +496,23 @@ namespace Lib
                     );
                     cmd.AddParameter(new DbCommandParameter()
                     {
-                        ParameterName = "Y",
+                        ParameterName = "maxSimsAlreadyRun",
                         DbType = ParamDbType.Integer,
-                        Value = Y
+                        Value = maxSimsAlreadyRun
                     }
                     );
                     cmd.AddParameter(new DbCommandParameter()
                     {
-                        ParameterName = "N",
+                        ParameterName = "numRowsToReturn",
                         DbType = ParamDbType.Integer,
-                        Value = N
+                        Value = numRowsToReturn
+                    }
+                    );
+                    cmd.AddParameter(new DbCommandParameter()
+                    {
+                        ParameterName = "minSuccessRate",
+                        DbType = ParamDbType.Numeric,
+                        Value = minSuccessRate
                     }
                     );
                     using (var reader = PostgresDAL.executeReader(cmd.npgsqlCommand))
@@ -426,6 +522,24 @@ namespace Lib
                             Guid runId = PostgresDAL.getGuid(reader, "runid");
                             var batch = DataAccessLayer.DeserializeMonteCarloBatch(
                                 PostgresDAL.getString(reader, "serializedself"));
+
+                            // overwrite the non-randomized values with config values                            
+                            batch.simParams.startDate = DateTime.Now.Date;
+                            batch.simParams.retirementDate = ConfigManager.GetDateTime("RetirementDate");
+                            batch.simParams.birthDate = ConfigManager.GetDateTime("BirthDate");
+                            batch.simParams.monthlyGrossIncomePreRetirement = ConfigManager.GetDecimal("AnnualIncome") / 12.0m;
+                            batch.simParams.monthlyNetSocialSecurityIncome = ConfigManager.GetDecimal("monthlyNetSocialSecurityIncome");
+                            batch.simParams.monthlySpendCoreToday = ConfigManager.GetDecimal("monthlySpendCoreToday");
+                            batch.simParams.monthlyInvestRoth401k = ConfigManager.GetDecimal("monthlyInvestRoth401k");
+                            batch.simParams.monthlyInvestTraditional401k = ConfigManager.GetDecimal("monthlyInvestTraditional401k");
+                            batch.simParams.monthlyInvestBrokerage = ConfigManager.GetDecimal("monthlyInvestBrokerage");
+                            batch.simParams.monthlyInvestHSA = ConfigManager.GetDecimal("monthlyInvestHSA");
+                            batch.simParams.annualRSUInvestmentPreTax = ConfigManager.GetDecimal("annualRSUInvestmentPreTax");
+                            batch.simParams.deathAgeOverride = ConfigManager.GetInt("deathAgeOverride");
+                            batch.simParams.annualInflationLow = ConfigManager.GetDecimal("annualInflationLow");
+                            batch.simParams.annualInflationHi = ConfigManager.GetDecimal("annualInflationHi");
+                            batch.simParams.socialSecurityCollectionAge = ConfigManager.GetDecimal("socialSecurityCollectionAge");
+
                             outList.Add(batch);
                         }
                     }
@@ -435,9 +549,12 @@ namespace Lib
             return outList;
 
         }
-        public static List<MonteCarloBatch> GetRunsToExtend(int N, int Y, string monteCarloVersion)
+        public static List<MonteCarloBatch> GetRunsToExtend(int numRowsToReturn, string monteCarloVersion)
         {
             List<MonteCarloBatch> outList = new List<MonteCarloBatch>();
+
+            int maxSimsAlreadyRun = 1100;
+            decimal minSuccessRate = 0.8M;
 
             using (var conn = PostgresDAL.getConnection())
             {
@@ -472,6 +589,7 @@ namespace Lib
                     left join investmenttracker.montecarlosimparameters p on b.runid = p.runid
                     where 1=1
                     and b.montecarloversion = @monteCarloVersion
+                    and (b.analytics->'successRateBadYears')::varchar(17)::numeric(4,3) >= @minSuccessRate
                     group by
                         p.retirementdate,
                         p.monthlySpendLifeStyleToday,
@@ -495,9 +613,9 @@ namespace Lib
                         p.annualInflationLow,
                         p.annualInflationHi,
                         p.socialSecurityCollectionAge
-                    having sum(b.numberofsimstorun) < @Y
+                    having sum(b.numberofsimstorun) < @maxSimsAlreadyRun
                     order by avg((b.analytics->'averageLifeStyleSpendSuccessfulBadYears')::varchar(17)::numeric * (b.analytics->'successRateBadYears')::varchar(17)::numeric) desc
-                    limit (@N)
+                    limit (@numRowsToReturn)
                     ;
                 ";
                 
@@ -513,16 +631,23 @@ namespace Lib
                     );
                     cmd.AddParameter(new DbCommandParameter()
                     {
-                        ParameterName = "Y",
+                        ParameterName = "maxSimsAlreadyRun",
                         DbType = ParamDbType.Integer,
-                        Value = Y
+                        Value = maxSimsAlreadyRun
                     }
                     );
                     cmd.AddParameter(new DbCommandParameter()
                     {
-                        ParameterName = "N",
+                        ParameterName = "numRowsToReturn",
                         DbType = ParamDbType.Integer,
-                        Value = N
+                        Value = numRowsToReturn
+                    }
+                    );
+                    cmd.AddParameter(new DbCommandParameter()
+                    {
+                        ParameterName = "minSuccessRate",
+                        DbType = ParamDbType.Numeric,
+                        Value = minSuccessRate
                     }
                     );
                     using (var reader = PostgresDAL.executeReader(cmd.npgsqlCommand))
@@ -532,10 +657,7 @@ namespace Lib
                             MonteCarloBatch batch = new MonteCarloBatch();
                             batch.simParams = new SimulationParameters()
                             {
-                                startDate = DateTime.Now.Date,
-                                retirementDate = PostgresDAL.getDateTime(reader, "retirementdate", DateTimeKind.Unspecified),
                                 monthlySpendLifeStyleToday = PostgresDAL.getDecimal(reader, "monthlySpendLifeStyleToday"),
-                                monthlySpendCoreToday = PostgresDAL.getDecimal(reader, "monthlySpendCoreToday"),
                                 xMinusAgeStockPercentPreRetirement = PostgresDAL.getDecimal(reader, "xMinusAgeStockPercentPreRetirement"),
                                 numYearsCashBucketInRetirement = PostgresDAL.getDecimal(reader, "numYearsCashBucketInRetirement"),
                                 numYearsBondBucketInRetirement = PostgresDAL.getDecimal(reader, "numYearsBondBucketInRetirement"),
@@ -545,20 +667,26 @@ namespace Lib
                                 retirementLifestyleAdjustment = PostgresDAL.getDecimal(reader, "retirementLifestyleAdjustment"),
                                 livingLargeThreashold = PostgresDAL.getDecimal(reader, "livingLargeThreashold"),
                                 livingLargeLifestyleSpendMultiplier = PostgresDAL.getDecimal(reader, "livingLargeLifestyleSpendMultiplier"),
-                                monthlyInvestRoth401k = PostgresDAL.getDecimal(reader, "monthlyInvestRoth401k"),
-                                monthlyInvestTraditional401k = PostgresDAL.getDecimal(reader, "monthlyInvestTraditional401k"),
-                                monthlyInvestBrokerage = PostgresDAL.getDecimal(reader, "monthlyInvestBrokerage"),
-                                monthlyInvestHSA = PostgresDAL.getDecimal(reader, "monthlyInvestHSA"),
-                                annualRSUInvestmentPreTax = PostgresDAL.getDecimal(reader, "annualRSUInvestmentPreTax"),
-                                deathAgeOverride = PostgresDAL.getInt(reader, "deathAgeOverride"),
                                 maxSpendingPercentWhenBelowRetirementLevelEquity = PostgresDAL.getDecimal(reader, "maxSpendingPercentWhenBelowRetirementLevelEquity"),
-                                annualInflationLow = PostgresDAL.getDecimal(reader, "annualInflationLow"),
-                                annualInflationHi = PostgresDAL.getDecimal(reader, "annualInflationHi"),
-                                socialSecurityCollectionAge = PostgresDAL.getDecimal(reader, "socialSecurityCollectionAge"),
-                                birthDate = ConfigManager.GetDateTime("BirthDate"),
-                                monthlyGrossIncomePreRetirement = ConfigManager.GetDecimal("AnnualIncome") / 12.0m,
-                                monthlyNetSocialSecurityIncome = ConfigManager.GetDecimal("monthlyNetSocialSecurityIncome"),
+                                
                             };
+                            // overwrite the non-randomized values with config values                            
+                            batch.simParams.startDate = DateTime.Now.Date;
+                            batch.simParams.retirementDate = ConfigManager.GetDateTime("RetirementDate");
+                            batch.simParams.birthDate = ConfigManager.GetDateTime("BirthDate");
+                            batch.simParams.monthlyGrossIncomePreRetirement = ConfigManager.GetDecimal("AnnualIncome") / 12.0m;
+                            batch.simParams.monthlyNetSocialSecurityIncome = ConfigManager.GetDecimal("monthlyNetSocialSecurityIncome");
+                            batch.simParams.monthlySpendCoreToday = ConfigManager.GetDecimal("monthlySpendCoreToday");
+                            batch.simParams.monthlyInvestRoth401k = ConfigManager.GetDecimal("monthlyInvestRoth401k");
+                            batch.simParams.monthlyInvestTraditional401k = ConfigManager.GetDecimal("monthlyInvestTraditional401k");
+                            batch.simParams.monthlyInvestBrokerage = ConfigManager.GetDecimal("monthlyInvestBrokerage");
+                            batch.simParams.monthlyInvestHSA = ConfigManager.GetDecimal("monthlyInvestHSA");
+                            batch.simParams.annualRSUInvestmentPreTax = ConfigManager.GetDecimal("annualRSUInvestmentPreTax");
+                            batch.simParams.deathAgeOverride = ConfigManager.GetInt("deathAgeOverride");
+                            batch.simParams.annualInflationLow = ConfigManager.GetDecimal("annualInflationLow");
+                            batch.simParams.annualInflationHi = ConfigManager.GetDecimal("annualInflationHi");
+                            batch.simParams.socialSecurityCollectionAge = ConfigManager.GetDecimal("socialSecurityCollectionAge");
+
                             outList.Add(batch);
                         }
                     }
@@ -568,6 +696,86 @@ namespace Lib
             return outList;
 
         }
+        public static MonteCarloBatch GetSingleBestRun(string monteCarloVersion)
+        {
+            int minSimsAlreadyRun = 1100;
+            decimal minSuccessRate = 0.8M;
+            int numRowsToReturn = 1;
+
+            using (var conn = PostgresDAL.getConnection())
+            {
+                string query = @"
+                    SELECT 
+	                    b.serializedself
+                    FROM investmenttracker.montecarlobatch b
+                    where 1=1
+                    and b.montecarloversion = @monteCarloVersion
+                    and numberofsimstorun >= @minSimsAlreadyRun
+                    and (b.analytics->'successRateBadYears')::varchar(17)::numeric(4,3) >= @minSuccessRate
+                    order by ((b.analytics->'averageLifeStyleSpendSuccessfulBadYears')::varchar(17)::numeric * (b.analytics->'successRateBadYears')::varchar(17)::numeric) desc
+                    limit(@numRowsToReturn)
+                    ;
+                ";
+
+                PostgresDAL.openConnection(conn);
+                using (DbCommand cmd = new DbCommand(query, conn))
+                {
+                    cmd.AddParameter(new DbCommandParameter()
+                    {
+                        ParameterName = "monteCarloVersion",
+                        DbType = ParamDbType.Varchar,
+                        Value = monteCarloVersion
+                    }
+                    );
+                    cmd.AddParameter(new DbCommandParameter()
+                    {
+                        ParameterName = "minSimsAlreadyRun",
+                        DbType = ParamDbType.Integer,
+                        Value = minSimsAlreadyRun
+                    }
+                    );
+                    cmd.AddParameter(new DbCommandParameter()
+                    {
+                        ParameterName = "numRowsToReturn",
+                        DbType = ParamDbType.Integer,
+                        Value = numRowsToReturn
+                    }
+                    );
+                    cmd.AddParameter(new DbCommandParameter()
+                    {
+                        ParameterName = "minSuccessRate",
+                        DbType = ParamDbType.Numeric,
+                        Value = minSuccessRate
+                    }
+                    );
+                    string serializedself = (string)PostgresDAL.executeScalar(cmd.npgsqlCommand);
+
+                    var batch = DeserializeMonteCarloBatch(serializedself);
+                    batch.runId = Guid.NewGuid();
+
+                    // overwrite the non-randomized values with config values                            
+                    batch.simParams.startDate = DateTime.Now.Date;
+                    batch.simParams.retirementDate = ConfigManager.GetDateTime("RetirementDate");
+                    batch.simParams.birthDate = ConfigManager.GetDateTime("BirthDate");
+                    batch.simParams.monthlyGrossIncomePreRetirement = ConfigManager.GetDecimal("AnnualIncome") / 12.0m;
+                    batch.simParams.monthlyNetSocialSecurityIncome = ConfigManager.GetDecimal("monthlyNetSocialSecurityIncome");
+                    batch.simParams.monthlySpendCoreToday = ConfigManager.GetDecimal("monthlySpendCoreToday");
+                    batch.simParams.monthlyInvestRoth401k = ConfigManager.GetDecimal("monthlyInvestRoth401k");
+                    batch.simParams.monthlyInvestTraditional401k = ConfigManager.GetDecimal("monthlyInvestTraditional401k");
+                    batch.simParams.monthlyInvestBrokerage = ConfigManager.GetDecimal("monthlyInvestBrokerage");
+                    batch.simParams.monthlyInvestHSA = ConfigManager.GetDecimal("monthlyInvestHSA");
+                    batch.simParams.annualRSUInvestmentPreTax = ConfigManager.GetDecimal("annualRSUInvestmentPreTax");
+                    batch.simParams.deathAgeOverride = ConfigManager.GetInt("deathAgeOverride");
+                    batch.simParams.annualInflationLow = ConfigManager.GetDecimal("annualInflationLow");
+                    batch.simParams.annualInflationHi = ConfigManager.GetDecimal("annualInflationHi");
+                    batch.simParams.socialSecurityCollectionAge = ConfigManager.GetDecimal("socialSecurityCollectionAge");
+                                
+                    return batch;
+                        
+                    
+                }
+            }
+        }
         public static bool IsClutchOn()
         {
             using (var conn = PostgresDAL.getConnection())
@@ -575,7 +783,8 @@ namespace Lib
                 string query = @"
                     select isclutchon 
                     from investmenttracker.clutch
-                    limit 1;                ";
+                    limit 1;
+                    ";
 
                 PostgresDAL.openConnection(conn);
                 using (DbCommand cmd = new DbCommand(query, conn))

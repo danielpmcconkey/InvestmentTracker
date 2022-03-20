@@ -355,8 +355,7 @@ namespace Lib.Engine
                 // set begin to a minimum of 6 months behind end
                 if (beginScrape >= endScrape.AddMonths(-6)) beginScrape = endScrape.AddMonths(-6);
 
-                List<Valuation> yahooPrices = YahooScraper.GetHistoryPrices(
-                    symbol, beginScrape, endScrape);
+                List<Valuation> yahooPrices = YahooScraper.GetHistoryPricesDaily(symbol);
 
                 foreach(Valuation valuation in yahooPrices)
                 {
@@ -372,14 +371,8 @@ namespace Lib.Engine
                             && x.Date == valuation.Date
                             ).FirstOrDefault();
                         oldValuation.Price = valuation.Price;
-
-                        // todo: update the DB price
                     }
                 }
-
-                
-
-
             }
         }
         private static bool IsPriceAtDate(InvestmentVehicle vehicle, DateTimeOffset date)

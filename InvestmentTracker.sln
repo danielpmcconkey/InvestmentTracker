@@ -14,7 +14,11 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "GraphLib", "GraphLib\GraphLib.csproj", "{2E5AADC9-E749-465E-9B04-0D676C92BB4C}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Utilities", "Utilities\Utilities.csproj", "{A1EA869F-BD5D-460C-82E2-8199C8AB793F}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Utilities", "Utilities\Utilities.csproj", "{A1EA869F-BD5D-460C-82E2-8199C8AB793F}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MonteCarloCLI", "MonteCarloCLI\MonteCarloCLI.csproj", "{53EA9FE5-960C-4785-8A14-5EBF45187B61}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ValuationScraperCLI", "ValuationScraper\ValuationScraperCLI.csproj", "{E7499812-DED9-4D5F-9C40-61CFE0FD4EB6}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -38,6 +42,14 @@ Global
 		{A1EA869F-BD5D-460C-82E2-8199C8AB793F}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{A1EA869F-BD5D-460C-82E2-8199C8AB793F}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{A1EA869F-BD5D-460C-82E2-8199C8AB793F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{53EA9FE5-960C-4785-8A14-5EBF45187B61}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{53EA9FE5-960C-4785-8A14-5EBF45187B61}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{53EA9FE5-960C-4785-8A14-5EBF45187B61}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{53EA9FE5-960C-4785-8A14-5EBF45187B61}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E7499812-DED9-4D5F-9C40-61CFE0FD4EB6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E7499812-DED9-4D5F-9C40-61CFE0FD4EB6}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E7499812-DED9-4D5F-9C40-61CFE0FD4EB6}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E7499812-DED9-4D5F-9C40-61CFE0FD4EB6}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

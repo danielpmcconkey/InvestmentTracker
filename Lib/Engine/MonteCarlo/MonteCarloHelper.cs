@@ -13,12 +13,83 @@ namespace Lib.Engine.MonteCarlo
 {
     public static class MonteCarloHelper
     {
-        #region public methods
-        public static void EvolveBestRuns(string monteCarloVersion, int numBatchesToRun, List<Account> accounts)
-        {
-            var assetsGoingIn = CreateSimAssetsFromAccounts(accounts);
+        
 
-            var batches = DataAccessLayer.GetRunsToEvolve(numBatchesToRun, 1100, monteCarloVersion);
+        #region public methods
+        public static List<Asset> CreateSimAssetsFromAccounts(List<Account> accounts)
+        {
+            List<Asset> assetsGoingIn = new List<Asset>();
+
+            DateTimeOffset today = DateTimeHelper.CreateDateFromParts(DateTime.Now.Year,
+                DateTime.Now.Month, DateTime.Now.Day, 0, 0, 0);
+            foreach (var account in accounts)
+            {
+
+                // group transactions by investment vehicle
+                var transactionsByVehicle = account.Transactions
+                    .GroupBy(x => x.InvestmentVehicle)
+                    .Select(group => new { vehicle = group.Key, transactions = group.ToList() });
+                foreach (var tGroup in transactionsByVehicle)
+                {
+                    Asset a = new Asset();
+                    a.created = tGroup.transactions.Min(x => x.Date).Date;
+                    var allPurchases = tGroup.transactions
+                    .Where(x => x.TransactionType == TransactionType.PURCHASE);
+                    var allSales = tGroup.transactions
+                        .Where(x => x.TransactionType == TransactionType.SALE);
+                    decimal numShares = allPurchases.Sum(y => y.Quantity);
+                    numShares -= allSales.Sum(y => y.Quantity);
+                    decimal pricePerShare = PricingEngine.GetPriceAtDate(tGroup.vehicle, today).Price;
+                    a.amountCurrent = (long)(Math.Round(pricePerShare * numShares * 10000, 0));
+                    // RMD dates
+                    DateTime birthDayAt72 = ConfigManager.GetDateTime("BirthDate").AddYears(72);
+                    a.rmdDate = null;
+                    if (account.AccountType == AccountType.ROTH_IRA) a.rmdDate = null;
+                    if (account.AccountType == AccountType.TRADITIONAL_IRA) a.rmdDate = birthDayAt72;
+                    if (account.AccountType == AccountType.ROTH_401_K) a.rmdDate = birthDayAt72;
+                    if (account.AccountType == AccountType.TRADITIONAL_401_K) a.rmdDate = birthDayAt72;
+
+                    a.amountContributed = (long)(Math.Round(
+                        (allPurchases.Sum(x => x.CashPriceTotalTransaction) -
+                        allSales.Sum(x => x.CashPriceTotalTransaction)) * 10000, 0)
+                        );
+
+                    // tax buckets are:
+                    //     taxable (TAXABLE_BROKERAGE, OTHER)
+                    //     tax deferred (TRADITIONAL_401_K, TRADITIONAL_IRA)
+                    //     non-taxable (ROTH_401_K, , ROTH_IRA, HSA)
+                    a.taxBucket = TaxBucket.TAXABLE;
+                    if (account.AccountType == AccountType.TAXABLE_BROKERAGE
+                        || account.AccountType == AccountType.OTHER)
+                    {
+                        a.taxBucket = TaxBucket.TAXABLE;
+                    }
+                    if (account.AccountType == AccountType.TRADITIONAL_401_K
+                        || account.AccountType == AccountType.TRADITIONAL_IRA)
+                    {
+                        a.taxBucket = TaxBucket.TAXDEFERRED;
+                    }
+                    if (account.AccountType == AccountType.ROTH_401_K
+                        || account.AccountType == AccountType.ROTH_IRA
+                        || account.AccountType == AccountType.HSA)
+                    {
+                        a.taxBucket = TaxBucket.TAXFREE;
+                    }
+
+                    if (tGroup.vehicle.Type == InvestmentVehicleType.PUBLICLY_TRADED)
+                    {
+                        a.investmentIndex = InvestmentIndex.EQUITY;
+                        assetsGoingIn.Add(a);
+
+                    }
+                }
+            }
+            return assetsGoingIn;
+        }
+        public static void EvolveBestRuns(string monteCarloVersion, int numBatchesToRun)
+        {
+            var batches = DataAccessLayer.GetRunsToEvolve(numBatchesToRun, monteCarloVersion);
+            var assetsGoingIn = DataAccessLayer.ReadSimAssetsFromDb();
             foreach (var batch in batches)
             {
                 CheckClucth();
@@ -33,10 +104,10 @@ namespace Lib.Engine.MonteCarlo
             }
 
         }
-        public static void ExtendBestRuns(string monteCarloVersion, List<Account> accounts)
-        {
-            var assetsGoingIn = CreateSimAssetsFromAccounts(accounts);
-            var batches = DataAccessLayer.GetRunsToExtend(10, 1100, monteCarloVersion);
+        public static void ExtendBestRuns(string monteCarloVersion)
+        {            
+            var batches = DataAccessLayer.GetRunsToExtend(10, monteCarloVersion);
+            var assetsGoingIn = DataAccessLayer.ReadSimAssetsFromDb();
             foreach (var batch in batches)
             {
                 CheckClucth();
@@ -115,47 +186,17 @@ namespace Lib.Engine.MonteCarlo
 
             return graphData;
         }
-        public static MonteCarloBatch RunMonteCarlo(List<Account> accounts)
+        public static MonteCarloBatch RunMonteCarlo(List<Asset> assetsGoingIn)
         {
             CheckClucth();
 
-            SimulationParameters simParams = new SimulationParameters()
-            {
-                startDate = DateTime.Now.Date,
-                retirementDate = ConfigManager.GetDateTime("RetirementDate"),
-                birthDate = ConfigManager.GetDateTime("BirthDate"),
-                monthlyGrossIncomePreRetirement = ConfigManager.GetDecimal("AnnualIncome") / 12.0m,
-                monthlyNetSocialSecurityIncome = ConfigManager.GetDecimal("monthlyNetSocialSecurityIncome"),
-                monthlySpendLifeStyleToday = ConfigManager.GetDecimal("monthlySpendLifeStyleToday"),
-                monthlySpendCoreToday = ConfigManager.GetDecimal("monthlySpendCoreToday"),
-                monthlyInvestRoth401k = ConfigManager.GetDecimal("monthlyInvestRoth401k"),
-                monthlyInvestTraditional401k = ConfigManager.GetDecimal("monthlyInvestTraditional401k"),
-                monthlyInvestBrokerage = ConfigManager.GetDecimal("monthlyInvestBrokerage"),
-                monthlyInvestHSA = ConfigManager.GetDecimal("monthlyInvestHSA"),
-                annualRSUInvestmentPreTax = ConfigManager.GetDecimal("annualRSUInvestmentPreTax"),
-                xMinusAgeStockPercentPreRetirement = ConfigManager.GetDecimal("xMinusAgeStockPercentPreRetirement"),
-                numYearsCashBucketInRetirement = ConfigManager.GetDecimal("numYearsCashBucketInRetirement"),
-                numYearsBondBucketInRetirement = ConfigManager.GetDecimal("numYearsBondBucketInRetirement"),
-                recessionRecoveryPercent = ConfigManager.GetDecimal("recessionRecoveryPercent"),
-                shouldMoveEquitySurplussToFillBondGapAlways = ConfigManager.GetBool("shouldMoveEquitySurplussToFillBondGapAlways"),
-                deathAgeOverride = ConfigManager.GetInt("deathAgeOverride"),
-                recessionLifestyleAdjustment = ConfigManager.GetDecimal("recessionLifestyleAdjustment"),
-                retirementLifestyleAdjustment = ConfigManager.GetDecimal("retirementLifestyleAdjustment"),
-                maxSpendingPercentWhenBelowRetirementLevelEquity = ConfigManager.GetDecimal("maxSpendingPercentWhenBelowRetirementLevelEquity"),
-                annualInflationLow = ConfigManager.GetDecimal("annualInflationLow"),
-                annualInflationHi = ConfigManager.GetDecimal("annualInflationHi"),
-                socialSecurityCollectionAge = ConfigManager.GetDecimal("socialSecurityCollectionAge"),
-                livingLargeThreashold = ConfigManager.GetDecimal("livingLargeThreashold"),
-                livingLargeLifestyleSpendMultiplier = ConfigManager.GetDecimal("livingLargeLifestyleSpendMultiplier"),
-            };
-
-            var assetsGoingIn = CreateSimAssetsFromAccounts(accounts);
-            int numberOfSimsToRun = ConfigManager.GetInt("numberOfSimsToRun");
-            MonteCarloBatch mc = new MonteCarloBatch(simParams, assetsGoingIn, numberOfSimsToRun);
+            MonteCarloBatch mc = DataAccessLayer.GetSingleBestRun(MonteCarloBatch.monteCarloVersion);
+            mc.numberOfSimsToRun = ConfigManager.GetInt("numberOfSimsToRun");
+            mc.assetsGoingIn = assetsGoingIn;
             mc.runBatch();
             return mc;
         }
-        public static void RunMonteCarloBatches(int numBatches, List<Account> accounts)
+        public static void RunMonteCarloBatches(int numBatches)
         {
 
             for (int i = 0; i < numBatches; i++)
@@ -235,7 +276,7 @@ namespace Lib.Engine.MonteCarlo
                     livingLargeThreashold = livingLargeThreashold,
                     livingLargeLifestyleSpendMultiplier = livingLargeLifestyleSpendMultiplier,
                 };
-                List<Asset> assetsGoingIn = CreateSimAssetsFromAccounts(accounts);
+                List<Asset> assetsGoingIn = DataAccessLayer.ReadSimAssetsFromDb();
 
                 int numberOfSimsToRun = ConfigManager.GetInt("numberOfSimsToRun");
                 MonteCarloBatch mc = new MonteCarloBatch(simParams, assetsGoingIn, numberOfSimsToRun);
@@ -265,76 +306,6 @@ namespace Lib.Engine.MonteCarlo
             Logger.info("Paused while clutch is enabled.");
             System.Threading.Thread.Sleep(ConfigManager.GetTimeSpan("clutchSleepCheck"));
             CheckClucth();
-        }
-        private static List<Asset> CreateSimAssetsFromAccounts(List<Account> accounts)
-        {
-            List<Asset> assetsGoingIn = new List<Asset>();
-
-            DateTimeOffset today = DateTimeHelper.CreateDateFromParts(DateTime.Now.Year,
-                DateTime.Now.Month, DateTime.Now.Day, 0, 0, 0);
-            foreach (var account in accounts)
-            {
-
-                // group transactions by investment vehicle
-                var transactionsByVehicle = account.Transactions
-                    .GroupBy(x => x.InvestmentVehicle)
-                    .Select(group => new { vehicle = group.Key, transactions = group.ToList() });
-                foreach (var tGroup in transactionsByVehicle)
-                {
-                    Asset a = new Asset();
-                    a.created = tGroup.transactions.Min(x => x.Date).Date;
-                    var allPurchases = tGroup.transactions
-                    .Where(x => x.TransactionType == TransactionType.PURCHASE);
-                    var allSales = tGroup.transactions
-                        .Where(x => x.TransactionType == TransactionType.SALE);
-                    decimal numShares = allPurchases.Sum(y => y.Quantity);
-                    numShares -= allSales.Sum(y => y.Quantity);
-                    decimal pricePerShare = PricingEngine.GetPriceAtDate(tGroup.vehicle, today).Price;
-                    a.amountCurrent = (long)(Math.Round(pricePerShare * numShares * 10000, 0));
-                    // RMD dates
-                    DateTime birthDayAt72 = ConfigManager.GetDateTime("BirthDate").AddYears(72);
-                    a.rmdDate = null;
-                    if (account.AccountType == AccountType.ROTH_IRA) a.rmdDate = null;
-                    if (account.AccountType == AccountType.TRADITIONAL_IRA) a.rmdDate = birthDayAt72;
-                    if (account.AccountType == AccountType.ROTH_401_K) a.rmdDate = birthDayAt72;
-                    if (account.AccountType == AccountType.TRADITIONAL_401_K) a.rmdDate = birthDayAt72;
-
-                    a.amountContributed = (long)(Math.Round(
-                        (allPurchases.Sum(x => x.CashPriceTotalTransaction) -
-                        allSales.Sum(x => x.CashPriceTotalTransaction)) * 10000, 0)
-                        );
-
-                    // tax buckets are:
-                    //     taxable (TAXABLE_BROKERAGE, OTHER)
-                    //     tax deferred (TRADITIONAL_401_K, TRADITIONAL_IRA)
-                    //     non-taxable (ROTH_401_K, , ROTH_IRA, HSA)
-                    a.taxBucket = TaxBucket.TAXABLE;
-                    if (account.AccountType == AccountType.TAXABLE_BROKERAGE
-                        || account.AccountType == AccountType.OTHER)
-                    {
-                        a.taxBucket = TaxBucket.TAXABLE;
-                    }
-                    if (account.AccountType == AccountType.TRADITIONAL_401_K
-                        || account.AccountType == AccountType.TRADITIONAL_IRA)
-                    {
-                        a.taxBucket = TaxBucket.TAXDEFERRED;
-                    }
-                    if (account.AccountType == AccountType.ROTH_401_K
-                        || account.AccountType == AccountType.ROTH_IRA
-                        || account.AccountType == AccountType.HSA)
-                    {
-                        a.taxBucket = TaxBucket.TAXFREE;
-                    }
-
-                    if (tGroup.vehicle.Type == InvestmentVehicleType.PUBLICLY_TRADED)
-                    {
-                        a.investmentIndex = InvestmentIndex.EQUITY;
-                        assetsGoingIn.Add(a);
-
-                    }
-                }
-            }
-            return assetsGoingIn;
         }
         private static MonteCarloBatch EvolveBatch(MonteCarloBatch b)
         {

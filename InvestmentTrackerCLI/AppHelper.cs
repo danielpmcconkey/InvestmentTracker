@@ -37,38 +37,11 @@ namespace InvestmentTrackerCLI
             printAssemblyInfo();
             foreach (string arg in args)
             {
-                
-                
-                
-                if (arg.ToLower() == "shouldcatchuppricingdata:true")
-                {
-                    FEATURETOGGLE.SHOULDCATCHUPPRICINGDATA = true;
-                }
-                if (arg.ToLower() == "shouldcatchuppricingdata:false")
-                {
-                    FEATURETOGGLE.SHOULDCATCHUPPRICINGDATA = false;
-                }
-                if (arg.ToLower() == "shouldblendpricingdata:true")
-                {
-                    FEATURETOGGLE.SHOULDBLENDPRICINGDATA = true;
-                }
-                if (arg.ToLower() == "shouldblendpricingdata:false")
-                {
-                    FEATURETOGGLE.SHOULDBLENDPRICINGDATA = false;
-                }
-                if (arg.ToLower() == "shouldprintnetworth:true")
-                {
-                    FEATURETOGGLE.SHOULDPRINTNETWORTH = true;
-                }
-                if (arg.ToLower() == "shouldprintnetworth:false")
-                {
-                    FEATURETOGGLE.SHOULDPRINTNETWORTH = false;
-                }
+                // no args to worry about
             }
             Logger.info("Feature toggles:");
-            Logger.info(string.Format("     _shouldCatchUpPricingData set to {0}", FEATURETOGGLE.SHOULDCATCHUPPRICINGDATA));
-            Logger.info(string.Format("     _shouldBlendPricingData set to {0}", FEATURETOGGLE.SHOULDBLENDPRICINGDATA));
-            Logger.info(string.Format("     _shouldPrintNetWorth set to {0}", FEATURETOGGLE.SHOULDPRINTNETWORTH));
+            Logger.info(string.Format("     SHOULDPRINTNETWORTH set to {0}", FEATURETOGGLE.SHOULDPRINTNETWORTH));
+            Logger.info(string.Format("     SHOULDRUNMONTECARLO set to {0}", FEATURETOGGLE.SHOULDRUNMONTECARLO));
         }
         internal static void Run()
         {
@@ -88,47 +61,7 @@ namespace InvestmentTrackerCLI
 
                 // create a pricing engine for use in further operations                 
                 PricingEngine.AddValuations(prices);
-                if (FEATURETOGGLE.SHOULDREADNEWTRANSACTIONFILES)
-                {
-                    Logger.info("Updating Fidelity transaction data");
-                    accounts = FidelityScraper.GetTransactions(accounts);
-                    Logger.info("Finished updating Fidelity transaction data");
-                    Logger.info("Updating T.Rowe Price transaction data");
-                    accounts = TRoweScraper.GetTransactions(accounts);
-                    Logger.info("Finished updating T.Rowe Price transaction data");
-                    Logger.info("Updating Health Equity transaction data");
-                    accounts = HealthEquityScraper.GetTransactions(accounts);
-                    Logger.info("Finished updating Health Equity transaction data");
-                }
-
-                if (FEATURETOGGLE.SHOULDCATCHUPPRICINGDATA)
-                {
-                    Logger.info("Catching up pricing data");
-                    prices = PricingEngine.CatchUpPrices(accounts);
-                    Logger.info("Finished catching up pricing data");
-                }
-                if (FEATURETOGGLE.SHOULDBLENDPRICINGDATA)
-                {
-                    //const bool logPrices = true;
-                    const bool logPrices = false;
-                    if (logPrices)
-                    {
-                        Logger.info("Printing prices before blend");
-                        PricingEngine.PrintPrices();
-                    }
-                    prices = PricingEngine.BlendPricesWithRealTransactions(accounts);
-                    if (logPrices)
-                    {
-                        Logger.info("Printing prices after adding real transactions");
-                        PricingEngine.PrintPrices();
-                    }
-                    prices = PricingEngine.BlendPricesDaily(accounts);
-                    if (logPrices)
-                    {
-                        Logger.info("Printing prices after full blend");
-                        PricingEngine.PrintPrices();
-                    }
-                }
+                
                 
                 StringBuilder sbOutput = new StringBuilder();
                 double captionWidth = 0;
@@ -195,10 +128,16 @@ namespace InvestmentTrackerCLI
                     //Logger.info(Environment.NewLine + svg.xml + Environment.NewLine);
                     Logger.info("Finished printing net worth");
                 }
+
+                // create sim assets list to use for all sim runs here on out
+                List<Asset> assetsGoingIn = MonteCarloHelper.CreateSimAssetsFromAccounts(accounts);
+                DataAccessLayer.OverwriteSimAssets(assetsGoingIn);
+
                 if (FEATURETOGGLE.SHOULDRUNMONTECARLO)
                 {
+                    
                     Logger.info("Running Monte Carlo simulation");
-                    MonteCarloBatch mcBatch = MonteCarloHelper.RunMonteCarlo(accounts);
+                    MonteCarloBatch mcBatch = MonteCarloHelper.RunMonteCarlo(assetsGoingIn);
                     GraphData mcGraphData = MonteCarloHelper.GetMonteCarloGraphData(mcBatch);
                     GraphPrefs graphPrefs = GetDefaultGraphPrefs("Monte Carlo Simulation Results");
                     graphPrefs.graphFillHexColor = "F9F5EC";
@@ -280,24 +219,6 @@ namespace InvestmentTrackerCLI
                     Logger.info("Finished running Monte Carlo simulation");
                 }
                 WriteHTMLFile(sbOutput, captionWidth);
-                if (FEATURETOGGLE.SHOULDRUNMONTECARLOBATCHES)
-                {
-                    while (true)
-                    {
-                        // repeat forever, but check the clutch throughout
-
-                        Logger.info("Running Monte Carlo batches (totally random)");
-                        int numBatchesToRun = ConfigManager.GetInt("numMonteCarloBatchesToRun");
-                        MonteCarloHelper.RunMonteCarloBatches(numBatchesToRun, accounts);
-                        Logger.info("Finished running Monte Carlo batches (totally random)");
-                        Logger.info("Evolving Monte Carlo batches");
-                        MonteCarloHelper.EvolveBestRuns(MonteCarloBatch.monteCarloVersion, numBatchesToRun, accounts);
-                        Logger.info("Finished evolving Monte Carlo batches");
-                        Logger.info("Extending best Monte Carlo batches");
-                        MonteCarloHelper.ExtendBestRuns(MonteCarloBatch.monteCarloVersion, accounts);
-                        Logger.info("Finished extending best Monte Carlo batches");
-                    }
-                }
 
             }
             catch (Exception ex)

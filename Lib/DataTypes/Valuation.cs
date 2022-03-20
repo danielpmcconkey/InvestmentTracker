@@ -27,6 +27,10 @@ namespace Lib.DataTypes
             {
                 DataAccessLayer.WriteNewValuationToDb(this);
             }
+            else
+            {
+                DataAccessLayer.UpdateValuationInDb(this);
+            }
         }
     }
 }

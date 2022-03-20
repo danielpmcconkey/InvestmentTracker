@@ -54,10 +54,11 @@ FROM investmenttracker.montecarlobatch b
 left join investmenttracker.montecarlosimparameters p on b.runid = p.runid
 where 1=1
 and b.montecarloversion = '2022.02.23.014'
---and b.runid = '4f59d491-45b4-402f-b082-87131175177c'
---and numberofsimstorun > 1000
-and numberofsimstorun < 1100
+--and b.runid = '61e3fcd2-cac0-4e2b-b88c-0e483bfb67c0'
+and numberofsimstorun > 1000
+--and numberofsimstorun < 1100
 --and rundate > '2022-03-01 00:00'
+and (b.analytics->'successRateBadYears')::varchar(17)::numeric(4,3) >= .8
 order by ((b.analytics->'averageLifeStyleSpendSuccessfulBadYears')::varchar(17)::numeric * (b.analytics->'successRateBadYears')::varchar(17)::numeric) desc
 --order by rundate desc
 limit 100
