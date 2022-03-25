@@ -117,7 +117,7 @@ namespace Lib
             using (var conn = PostgresDAL.getConnection())
             {
                 string query = @"
-                    select id, name, investmentvehicletype, symbol, isindexfund
+                    select id, name, investmentvehicletype, symbol, isindexfund, investmentbucket
                     from investmenttracker.investmentvehicle
 					;";
                 PostgresDAL.openConnection(conn);
@@ -133,7 +133,8 @@ namespace Lib
                             var ivtype = PostgresDAL.getEnum<InvestmentVehicleType>(reader, "investmentvehicletype");
                             var symbol = PostgresDAL.getString(reader, "symbol");
                             var isindexfund = PostgresDAL.getBool(reader, "isindexfund");
-                            outList.Add(id, new InvestmentVehicle(id, name, symbol, ivtype, isindexfund));                            
+                            var bucket = PostgresDAL.getEnum<InvestmentBucket>(reader, "investmentbucket");
+                            outList.Add(id, new InvestmentVehicle(id, name, symbol, ivtype, isindexfund, bucket));                            
                         }
                     }
                 }
@@ -347,8 +348,8 @@ namespace Lib
                 string qParams = @"
 
                     INSERT INTO investmenttracker.investmentvehicle(
-                                id, name, investmentvehicletype, symbol, isindexfund)
-                        VALUES (@id, @name, @investmentvehicletype, @symbol, @isindexfund);
+                                id, name, investmentvehicletype, symbol, isindexfund, investmentbucket)
+                        VALUES (@id, @name, @investmentvehicletype, @symbol, @isindexfund, @investmentbucket);
 
                         ";
                 PostgresDAL.openConnection(conn);
@@ -359,12 +360,14 @@ namespace Lib
                     cmd.AddParameter(new DbCommandParameter { ParameterName = "investmentvehicletype", DbType = ParamDbType.Integer, Value = (int)v.Type });
                     cmd.AddParameter(new DbCommandParameter { ParameterName = "symbol", DbType = ParamDbType.Varchar, Value = v.Symbol });
                     cmd.AddParameter(new DbCommandParameter { ParameterName = "isindexfund", DbType = ParamDbType.Boolean, Value = v.IsIndexFund });
+                    cmd.AddParameter(new DbCommandParameter { ParameterName = "investmentbucket", DbType = ParamDbType.Integer, Value = (int)v.Bucket});
 
                     int numRowsAffected = PostgresDAL.executeNonQuery(cmd.npgsqlCommand);
                     if (numRowsAffected != 1)
                     {
                         throw new Exception(string.Format("WriteInvestMentVehicleToDb data insert returned {0} rows. Expected 1.", numRowsAffected));
                     }
+                    Logger.info(string.Format("New investment vehicle written to DB: {0}; {1};", v.Name, v.Symbol));
                 }
             }
 
@@ -399,6 +402,7 @@ namespace Lib
                     {
                         throw new Exception(string.Format("WriteAccountToDb data insert returned {0} rows. Expected 1.", numRowsAffected));
                     }
+                    Logger.info(string.Format("New transaction written to DB: {0}; {4}; {1}; {2}; {3}", accountId, t.Date.DateTime, t.Quantity, t.CashPriceTotalTransaction, t.InvestmentVehicle.Symbol));
                 }
             }
 

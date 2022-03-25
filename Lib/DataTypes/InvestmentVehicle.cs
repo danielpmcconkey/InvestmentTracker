@@ -18,6 +18,7 @@ namespace Lib.DataTypes
         public InvestmentVehicleType Type { get; set; }
         public string Symbol { get; set; } // only used if type is publicly traded
         public bool IsIndexFund { get; set; }
+        public InvestmentBucket Bucket { get; set; }
 
         public InvestmentVehicle(string name)
         {
@@ -26,6 +27,7 @@ namespace Lib.DataTypes
             Symbol = "N/A";
             Id = Guid.NewGuid();
             IsIndexFund = false;
+            Bucket = InvestmentBucket.NA;
 
             // write it to the DB
             DataAccessLayer.WriteNewInvestMentVehicleToDb(this);
@@ -37,18 +39,21 @@ namespace Lib.DataTypes
             Type = InvestmentVehicleType.PUBLICLY_TRADED;
             Id = Guid.NewGuid();
             IsIndexFund = false;
+            Bucket = InvestmentBucket.NA;
 
             // write it to the DB
             DataAccessLayer.WriteNewInvestMentVehicleToDb(this);
         }
         [JsonConstructor]
-        public InvestmentVehicle(Guid id, string name, string symbol, InvestmentVehicleType type, bool isindexfund)
+        public InvestmentVehicle(Guid id, string name, string symbol, InvestmentVehicleType type, 
+            bool isindexfund, InvestmentBucket investmentBucket)
         {
             Id = id; ;
             Name = name;
             Symbol = symbol;
             Type = type;
             IsIndexFund = isindexfund;
+            Bucket = investmentBucket;
         }
         public bool Equals(InvestmentVehicle other)
         {

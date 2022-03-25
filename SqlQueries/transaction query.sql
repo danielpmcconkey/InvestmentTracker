@@ -18,18 +18,19 @@ left join investmenttracker.accounttype at
 left join investmenttracker.investmentvehicle iv
 	on t.investmentvehicle = iv.id
 where 1=1
-and (
-	-- 401 k contributions in 2021
-	    at.accounttype in ('TRADITIONAL_401_K', 'ROTH_401_K')
-	and t.transactiondate between '2021-01-01' and '2022-01-01'
-	and tt.transactiontype <> 'SALE'
-	and a.name in (
-		'TD 401K Contributions'--,
-		--'Ally Company Retirement Contribution',
-		--'Ally Employee Elective Contribution',
-		--'Ally Roth 401(k) Contribution'
-		)
-)
+-- and (
+-- 	-- 401 k contributions in 2021
+-- 	    at.accounttype in ('TRADITIONAL_401_K', 'ROTH_401_K')
+-- 	and t.transactiondate between '2021-01-01' and '2022-01-01'
+-- 	and tt.transactiontype <> 'SALE'
+-- 	and a.name in (
+-- 		'TD 401K Contributions'--,
+-- 		--'Ally Company Retirement Contribution',
+-- 		--'Ally Employee Elective Contribution',
+-- 		--'Ally Roth 401(k) Contribution'
+-- 		)
+-- )
+--and at.accounttype = 'ROTH_IRA'
 order by t.transactiondate desc
 ;
 

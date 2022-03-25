@@ -11,13 +11,6 @@ using System.Threading.Tasks;
 
 namespace Lib.Engine
 {
-    public enum WorthGroupType
-    {
-        INDIVIDUAL_STOCKS,
-        MUTUAL_FUNDS,
-        PRIVATE_ASSETS,
-        ALL,
-    }
     public static class WorthEngine
     {
         #region public methods
