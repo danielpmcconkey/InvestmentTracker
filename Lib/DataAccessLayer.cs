@@ -117,7 +117,7 @@ namespace Lib
             using (var conn = PostgresDAL.getConnection())
             {
                 string query = @"
-                    select id, name, investmentvehicletype, symbol
+                    select id, name, investmentvehicletype, symbol, isindexfund
                     from investmenttracker.investmentvehicle
 					;";
                 PostgresDAL.openConnection(conn);
@@ -132,7 +132,8 @@ namespace Lib
                             var name = PostgresDAL.getString(reader, "name");
                             var ivtype = PostgresDAL.getEnum<InvestmentVehicleType>(reader, "investmentvehicletype");
                             var symbol = PostgresDAL.getString(reader, "symbol");
-                            outList.Add(id, new InvestmentVehicle(id, name, symbol, ivtype));                            
+                            var isindexfund = PostgresDAL.getBool(reader, "isindexfund");
+                            outList.Add(id, new InvestmentVehicle(id, name, symbol, ivtype, isindexfund));                            
                         }
                     }
                 }
@@ -346,8 +347,8 @@ namespace Lib
                 string qParams = @"
 
                     INSERT INTO investmenttracker.investmentvehicle(
-                                id, name, investmentvehicletype, symbol)
-                        VALUES (@id, @name, @investmentvehicletype, @symbol);
+                                id, name, investmentvehicletype, symbol, isindexfund)
+                        VALUES (@id, @name, @investmentvehicletype, @symbol, @isindexfund);
 
                         ";
                 PostgresDAL.openConnection(conn);
@@ -357,6 +358,7 @@ namespace Lib
                     cmd.AddParameter(new DbCommandParameter { ParameterName = "name", DbType = ParamDbType.Varchar, Value = v.Name });
                     cmd.AddParameter(new DbCommandParameter { ParameterName = "investmentvehicletype", DbType = ParamDbType.Integer, Value = (int)v.Type });
                     cmd.AddParameter(new DbCommandParameter { ParameterName = "symbol", DbType = ParamDbType.Varchar, Value = v.Symbol });
+                    cmd.AddParameter(new DbCommandParameter { ParameterName = "isindexfund", DbType = ParamDbType.Boolean, Value = v.IsIndexFund });
 
                     int numRowsAffected = PostgresDAL.executeNonQuery(cmd.npgsqlCommand);
                     if (numRowsAffected != 1)
@@ -475,8 +477,10 @@ namespace Lib
 	                    b.runid, 
 	                    b.serializedself
                     FROM investmenttracker.montecarlobatch b
+                    left join investmenttracker.montecarlosimparameters p on b.runid = p.runid
                     where 1=1
                     and b.montecarloversion = @monteCarloVersion
+                    and p.monthlySpendCoreToday = @monthlySpendCoreToday
                     and numberofsimstorun < @maxSimsAlreadyRun
                     and (b.analytics->'successRateBadYears')::varchar(17)::numeric(4,3) >= @minSuccessRate
                     order by ((b.analytics->'averageLifeStyleSpendSuccessfulBadYears')::varchar(17)::numeric * (b.analytics->'successRateBadYears')::varchar(17)::numeric) desc
@@ -513,6 +517,13 @@ namespace Lib
                         ParameterName = "minSuccessRate",
                         DbType = ParamDbType.Numeric,
                         Value = minSuccessRate
+                    }
+                    );
+                    cmd.AddParameter(new DbCommandParameter()
+                    {
+                        ParameterName = "monthlySpendCoreToday",
+                        DbType = ParamDbType.Numeric,
+                        Value = ConfigManager.GetDecimal("monthlySpendCoreToday")
                     }
                     );
                     using (var reader = PostgresDAL.executeReader(cmd.npgsqlCommand))
@@ -589,6 +600,7 @@ namespace Lib
                     left join investmenttracker.montecarlosimparameters p on b.runid = p.runid
                     where 1=1
                     and b.montecarloversion = @monteCarloVersion
+                    and p.monthlySpendCoreToday = @monthlySpendCoreToday
                     and (b.analytics->'successRateBadYears')::varchar(17)::numeric(4,3) >= @minSuccessRate
                     group by
                         p.retirementdate,
@@ -650,6 +662,13 @@ namespace Lib
                         Value = minSuccessRate
                     }
                     );
+                    cmd.AddParameter(new DbCommandParameter()
+                    {
+                        ParameterName = "monthlySpendCoreToday",
+                        DbType = ParamDbType.Numeric,
+                        Value = ConfigManager.GetDecimal("monthlySpendCoreToday")
+                    }
+                    );
                     using (var reader = PostgresDAL.executeReader(cmd.npgsqlCommand))
                     {
                         while (reader.Read())
@@ -699,7 +718,7 @@ namespace Lib
         public static MonteCarloBatch GetSingleBestRun(string monteCarloVersion)
         {
             int minSimsAlreadyRun = 1100;
-            decimal minSuccessRate = 0.8M;
+            decimal minSuccessRate = 0.1M; // 0.8M;
             int numRowsToReturn = 1;
 
             using (var conn = PostgresDAL.getConnection())
@@ -708,8 +727,10 @@ namespace Lib
                     SELECT 
 	                    b.serializedself
                     FROM investmenttracker.montecarlobatch b
+                    left join investmenttracker.montecarlosimparameters p on b.runid = p.runid
                     where 1=1
                     and b.montecarloversion = @monteCarloVersion
+                    and p.monthlySpendCoreToday = @monthlySpendCoreToday
                     and numberofsimstorun >= @minSimsAlreadyRun
                     and (b.analytics->'successRateBadYears')::varchar(17)::numeric(4,3) >= @minSuccessRate
                     order by ((b.analytics->'averageLifeStyleSpendSuccessfulBadYears')::varchar(17)::numeric * (b.analytics->'successRateBadYears')::varchar(17)::numeric) desc
@@ -748,6 +769,13 @@ namespace Lib
                         Value = minSuccessRate
                     }
                     );
+                    cmd.AddParameter(new DbCommandParameter()
+                    {
+                        ParameterName = "monthlySpendCoreToday",
+                        DbType = ParamDbType.Numeric,
+                        Value = ConfigManager.GetDecimal("monthlySpendCoreToday")
+                    }
+                    );
                     string serializedself = (string)PostgresDAL.executeScalar(cmd.npgsqlCommand);
 
                     var batch = DeserializeMonteCarloBatch(serializedself);
@@ -769,7 +797,7 @@ namespace Lib
                     batch.simParams.annualInflationLow = ConfigManager.GetDecimal("annualInflationLow");
                     batch.simParams.annualInflationHi = ConfigManager.GetDecimal("annualInflationHi");
                     batch.simParams.socialSecurityCollectionAge = ConfigManager.GetDecimal("socialSecurityCollectionAge");
-                                
+
                     return batch;
                         
                     

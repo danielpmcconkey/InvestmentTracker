@@ -20,28 +20,6 @@ namespace Lib.Engine
     }
     public static class WorthEngine
     {
-        private static HashSet<string> _mutualFunds = new HashSet<string>();
-
-
-        static WorthEngine()
-        {
-            _mutualFunds = new HashSet<string>();
-            _mutualFunds.Add("VIIIX");
-            _mutualFunds.Add("VTMNX");
-            _mutualFunds.Add("FPADX");
-            _mutualFunds.Add("FECGX");
-            _mutualFunds.Add("FSKAX");
-            _mutualFunds.Add("FXNAX");
-            _mutualFunds.Add("FZILX");
-            _mutualFunds.Add("FZROX");
-            _mutualFunds.Add("FREL");
-            _mutualFunds.Add("FSPSX");
-            _mutualFunds.Add("FFFFX");
-            _mutualFunds.Add("VSMAX");
-            _mutualFunds.Add("VITLX");
-            _mutualFunds.Add("VEXMX");
-            _mutualFunds.Add("VINIX");
-        }
         #region public methods
         public static GraphData GetSPDRComparisonGraphData(List<Account> accounts, bool isIndidivualStocksOnly)
         {
@@ -63,8 +41,7 @@ namespace Lib.Engine
             DateTimeOffset minDate = accounts
                         .SelectMany(x => x.Transactions)
                         .Where(y => y.InvestmentVehicle.Type == InvestmentVehicleType.PUBLICLY_TRADED
-                                && (!_mutualFunds.Contains(y.InvestmentVehicle.Symbol)
-                                || !isIndidivualStocksOnly))
+                                && (!y.InvestmentVehicle.IsIndexFund || !isIndidivualStocksOnly))
                         .Min(y => y.Date);
 
             // set up each graph series
@@ -98,8 +75,7 @@ namespace Lib.Engine
                             .SelectMany(x => x.Transactions)
                             .Where(y => y.Date == thisDate
                                 && y.InvestmentVehicle.Type == InvestmentVehicleType.PUBLICLY_TRADED
-                                && (!_mutualFunds.Contains(y.InvestmentVehicle.Symbol)
-                                || !isIndidivualStocksOnly));
+                                && (!y.InvestmentVehicle.IsIndexFund || !isIndidivualStocksOnly));
                 foreach (var t in transactions)
                 {
                     string stockSymbol = t.InvestmentVehicle.Symbol;
@@ -353,7 +329,7 @@ namespace Lib.Engine
         {
 
             List<InvestmentDuration> list = PricingEngine.GetPublicInvestmentDurationsFromAccounts(accounts)
-                .Where(x => _mutualFunds.Contains(x.investmentVehicle.Symbol) == true).ToList();
+                .Where(x => x.investmentVehicle.IsIndexFund == true).ToList();
 
             return GetPositionsFromInvestmentDurations(list, accounts);
         }
@@ -361,7 +337,7 @@ namespace Lib.Engine
         {
 
             List<InvestmentDuration> list = PricingEngine.GetPublicInvestmentDurationsFromAccounts(accounts)
-                .Where(x => _mutualFunds.Contains(x.investmentVehicle.Symbol) == false).ToList();
+                .Where(x => x.investmentVehicle.IsIndexFund == false).ToList();
 
             return GetPositionsFromInvestmentDurations(list, accounts);
         }

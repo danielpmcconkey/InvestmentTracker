@@ -79,12 +79,27 @@ namespace InvestmentTrackerCLI
                     GraphPrefs graphPrefsTaxBuckets = GetDefaultGraphPrefs("Total Net Worth by Tax Buckets");
                     GraphData graphDataTaxBuckets = WorthEngine.GetTotalNetWorthByTaxBucket(accounts);
                     LineChart svgTaxBuckets = new LineChart(graphPrefsTaxBuckets, lineChartPrefs, graphDataTaxBuckets, "TaxBucketsGraph");
-                                        
-                    GraphPrefs graphPrefsStocks = GetDefaultGraphPrefs("Individual stock worth");
-                    GraphData graphDataStocks = WorthEngine.GetStockGraphData(accounts);
+
+                    GraphPrefs graphPrefsStocks1 = GetDefaultGraphPrefs("Individual stock worth (1 of 2)");
+                    GraphPrefs graphPrefsStocks2 = GetDefaultGraphPrefs("Individual stock worth (2 of 2)");
+                    GraphData graphDataStocksAll = WorthEngine.GetStockGraphData(accounts);
+                    GraphData graphDataStocks1 = new GraphData();
+                    graphDataStocks1.xType = graphDataStocksAll.xType;
+                    graphDataStocks1.yType = graphDataStocksAll.yType;
+                    graphDataStocks1.series = new List<GraphSeries>();
+                    GraphData graphDataStocks2 = new GraphData();
+                    graphDataStocks2.xType = graphDataStocksAll.xType;
+                    graphDataStocks2.yType = graphDataStocksAll.yType;
+                    graphDataStocks2.series = new List<GraphSeries>();
+                    for (int i = 0; i < graphDataStocksAll.series.Count; i++)
+                    {
+                        if(i % 2 == 0) graphDataStocks1.AddSeries(graphDataStocksAll.series[i]);
+                        else graphDataStocks2.AddSeries(graphDataStocksAll.series[i]);
+                    }
                     LineChartPrefs stocklLineChartPrefs = GetDefaultLineChartPrefs();
                     stocklLineChartPrefs.xColumnLabelsTextFormat = "yyyy-MM-dd";
-                    LineChart svgStocks = new LineChart(graphPrefsStocks, stocklLineChartPrefs, graphDataStocks, "StocksGraph");
+                    LineChart svgStocks1 = new LineChart(graphPrefsStocks1, stocklLineChartPrefs, graphDataStocks1, "StocksGraph1");
+                    LineChart svgStocks2 = new LineChart(graphPrefsStocks2, stocklLineChartPrefs, graphDataStocks2, "StocksGraph2");
 
                     GraphPrefs graphPrefsIndividualStocksComparison = GetDefaultGraphPrefs("Individual stocks compared to S&P 500");
                     GraphData graphDataStocksComparison = WorthEngine
@@ -113,8 +128,9 @@ namespace InvestmentTrackerCLI
                     sbOutput.AppendLine("<p class='caption'>This chart shows a break down by tax buckets of your total net worth.</p>");
                     sbOutput.AppendLine("</div>");
                     sbOutput.AppendLine("<div>");
-                    sbOutput.AppendLine(svgStocks.MakeXML());
-                    sbOutput.AppendLine("<p class='caption'>This chart shows your net worth in each individual stock position.</p>");
+                    sbOutput.AppendLine(svgStocks1.MakeXML());
+                    sbOutput.AppendLine(svgStocks2.MakeXML());
+                    sbOutput.AppendLine("<p class='caption'>These charts show your net worth in each individual stock position.</p>");
                     sbOutput.AppendLine("</div>");
                     sbOutput.AppendLine("<div>");
                     sbOutput.AppendLine(svgStockComparison.MakeXML());
