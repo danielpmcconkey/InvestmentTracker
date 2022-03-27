@@ -485,6 +485,7 @@ namespace Lib
                     where 1=1
                     and b.montecarloversion = @monteCarloVersion
                     and p.monthlySpendCoreToday = @monthlySpendCoreToday
+                    and and p.monthlyInvestBrokerage = @monthlyInvestBrokerage
                     and numberofsimstorun < @maxSimsAlreadyRun
                     and (b.analytics->'successRateBadYears')::varchar(17)::numeric(4,3) >= @minSuccessRate
                     order by ((b.analytics->'averageLifeStyleSpendSuccessfulBadYears')::varchar(17)::numeric * (b.analytics->'successRateBadYears')::varchar(17)::numeric) desc
@@ -530,6 +531,13 @@ namespace Lib
                         Value = ConfigManager.GetDecimal("monthlySpendCoreToday")
                     }
                     );
+                    cmd.AddParameter(new DbCommandParameter()
+                    {
+                        ParameterName = "monthlyInvestBrokerage",
+                        DbType = ParamDbType.Numeric,
+                        Value = ConfigManager.GetDecimal("monthlyInvestBrokerage")
+                    }
+                    ); 
                     using (var reader = PostgresDAL.executeReader(cmd.npgsqlCommand))
                     {
                         while (reader.Read())
@@ -605,6 +613,7 @@ namespace Lib
                     where 1=1
                     and b.montecarloversion = @monteCarloVersion
                     and p.monthlySpendCoreToday = @monthlySpendCoreToday
+                    and and p.monthlyInvestBrokerage = @monthlyInvestBrokerage
                     and (b.analytics->'successRateBadYears')::varchar(17)::numeric(4,3) >= @minSuccessRate
                     group by
                         p.retirementdate,
@@ -673,6 +682,13 @@ namespace Lib
                         Value = ConfigManager.GetDecimal("monthlySpendCoreToday")
                     }
                     );
+                    cmd.AddParameter(new DbCommandParameter()
+                    {
+                        ParameterName = "monthlyInvestBrokerage",
+                        DbType = ParamDbType.Numeric,
+                        Value = ConfigManager.GetDecimal("monthlyInvestBrokerage")
+                    }
+                    );
                     using (var reader = PostgresDAL.executeReader(cmd.npgsqlCommand))
                     {
                         while (reader.Read())
@@ -735,6 +751,7 @@ namespace Lib
                     where 1=1
                     and b.montecarloversion = @monteCarloVersion
                     and p.monthlySpendCoreToday = @monthlySpendCoreToday
+                    and and p.monthlyInvestBrokerage = @monthlyInvestBrokerage
                     and numberofsimstorun >= @minSimsAlreadyRun
                     and (b.analytics->'successRateBadYears')::varchar(17)::numeric(4,3) >= @minSuccessRate
                     order by ((b.analytics->'averageLifeStyleSpendSuccessfulBadYears')::varchar(17)::numeric * (b.analytics->'successRateBadYears')::varchar(17)::numeric) desc
@@ -780,6 +797,13 @@ namespace Lib
                         Value = ConfigManager.GetDecimal("monthlySpendCoreToday")
                     }
                     );
+                    cmd.AddParameter(new DbCommandParameter()
+                    {
+                        ParameterName = "monthlyInvestBrokerage",
+                        DbType = ParamDbType.Numeric,
+                        Value = ConfigManager.GetDecimal("monthlyInvestBrokerage")
+                    }
+                    );
                     string serializedself = (string)PostgresDAL.executeScalar(cmd.npgsqlCommand);
 
                     var batch = DeserializeMonteCarloBatch(serializedself);
@@ -803,8 +827,6 @@ namespace Lib
                     batch.simParams.socialSecurityCollectionAge = ConfigManager.GetDecimal("socialSecurityCollectionAge");
 
                     return batch;
-                        
-                    
                 }
             }
         }

@@ -13,6 +13,7 @@ namespace Utilities
         private static Dictionary<string, string> _cache;
         const string _secretsEnvVarName = "InvestmentTrackerVars";
 
+        
         public static void ReWriteSecrets()
         {
             string secretsString = Environment.GetEnvironmentVariable
@@ -53,6 +54,35 @@ namespace Utilities
             {
                 _cache.Add(secret.Key, secret.Value);
             }
+
+            // overwrite with DB config
+            string query = "select name, value from " + _cache["dbConfigTable"];
+            using (var conn = PostgresDAL.getConnection())
+            {
+                PostgresDAL.openConnection(conn);
+                using (DbCommand cmd = new DbCommand(query, conn))
+                {
+                    using (var reader = PostgresDAL.executeReader(cmd.npgsqlCommand))
+                    {
+                        while (reader.Read())
+                        {
+                            var name = PostgresDAL.getString(reader, "name");
+                            var value = PostgresDAL.getString(reader, "value");
+                            if(_cache.ContainsKey(name))
+                            {
+                                // overwrite
+                                _cache[name] = value;
+                            }
+                            else
+                            {
+                                // add
+                                _cache.Add(name, value);
+                            }
+                        }
+                    }
+                }
+            }
+
 
         }
         public static string GetString(string key)
