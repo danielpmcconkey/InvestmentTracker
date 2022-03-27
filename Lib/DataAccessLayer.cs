@@ -485,7 +485,7 @@ namespace Lib
                     where 1=1
                     and b.montecarloversion = @monteCarloVersion
                     and p.monthlySpendCoreToday = @monthlySpendCoreToday
-                    and and p.monthlyInvestBrokerage = @monthlyInvestBrokerage
+                    and p.monthlyInvestBrokerage = @monthlyInvestBrokerage
                     and numberofsimstorun < @maxSimsAlreadyRun
                     and (b.analytics->'successRateBadYears')::varchar(17)::numeric(4,3) >= @minSuccessRate
                     order by ((b.analytics->'averageLifeStyleSpendSuccessfulBadYears')::varchar(17)::numeric * (b.analytics->'successRateBadYears')::varchar(17)::numeric) desc
@@ -613,7 +613,7 @@ namespace Lib
                     where 1=1
                     and b.montecarloversion = @monteCarloVersion
                     and p.monthlySpendCoreToday = @monthlySpendCoreToday
-                    and and p.monthlyInvestBrokerage = @monthlyInvestBrokerage
+                    and p.monthlyInvestBrokerage = @monthlyInvestBrokerage
                     and (b.analytics->'successRateBadYears')::varchar(17)::numeric(4,3) >= @minSuccessRate
                     group by
                         p.retirementdate,
@@ -751,7 +751,7 @@ namespace Lib
                     where 1=1
                     and b.montecarloversion = @monteCarloVersion
                     and p.monthlySpendCoreToday = @monthlySpendCoreToday
-                    and and p.monthlyInvestBrokerage = @monthlyInvestBrokerage
+                    and p.monthlyInvestBrokerage = @monthlyInvestBrokerage
                     and numberofsimstorun >= @minSimsAlreadyRun
                     and (b.analytics->'successRateBadYears')::varchar(17)::numeric(4,3) >= @minSuccessRate
                     order by ((b.analytics->'averageLifeStyleSpendSuccessfulBadYears')::varchar(17)::numeric * (b.analytics->'successRateBadYears')::varchar(17)::numeric) desc

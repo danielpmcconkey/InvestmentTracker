@@ -1,5 +1,4 @@
-﻿
-update investmenttracker.clutch
+﻿update investmenttracker.clutch
 set isclutchon = TRUE;
 
 update investmenttracker.clutch

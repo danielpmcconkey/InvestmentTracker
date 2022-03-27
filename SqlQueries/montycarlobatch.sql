@@ -1,4 +1,10 @@
-﻿SELECT 
+﻿with configvals as (
+	select 
+		  cast((select value from investmenttracker.config where name = 'monthlySpendCoreToday') as numeric(12,2)) as monthlySpendCoreToday
+		, cast((select value from investmenttracker.config where name = 'monthlyInvestBrokerage') as numeric(12,2)) as monthlyInvestBrokerage
+)
+
+SELECT 
 	b.runid, 
 	b.montecarloversion, 
 	b.rundate, 
@@ -52,9 +58,11 @@
 	p.socialSecurityCollectionAge
 FROM investmenttracker.montecarlobatch b
 left join investmenttracker.montecarlosimparameters p on b.runid = p.runid
+cross join configvals
 where 1=1
 and b.montecarloversion = '2022.02.23.014'
-and p.monthlySpendCoreToday = 4000
+and p.monthlySpendCoreToday = configvals.monthlySpendCoreToday
+and p.monthlyInvestBrokerage = configvals.monthlyInvestBrokerage
 --and b.runid = '61e3fcd2-cac0-4e2b-b88c-0e483bfb67c0'
 --and numberofsimstorun > 1000
 and numberofsimstorun < 1100
@@ -65,3 +73,4 @@ order by ((b.analytics->'averageLifeStyleSpendSuccessfulBadYears')::varchar(17):
 --order by rundate desc
 limit 100
 ;
+--1.5 seconds
