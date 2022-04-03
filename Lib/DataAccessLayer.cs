@@ -18,11 +18,6 @@ namespace Lib
     {
         private static string _dataDirectory;
 
-        #region account and transactions
-        static DataAccessLayer()
-        {
-            _dataDirectory = ConfigManager.GetString("DataDirectory");
-        }
 
         #region JSON functions
         public static MonteCarloBatch DeserializeMonteCarloBatch(string serializedBatch)
@@ -38,11 +33,14 @@ namespace Lib
         public static string SerializeType<T>(T item)
         {
             return JsonSerializer.Serialize<T>(item);
-        } 
+        }
         #endregion
-
         
-        
+        #region account and transactions
+        static DataAccessLayer()
+        {
+            _dataDirectory = ConfigManager.GetString("DataDirectory");
+        }
         public static bool IsValuationInDb(Valuation v)
         {
             string q = @"
@@ -186,6 +184,41 @@ namespace Lib
             }
 
             return outList;
+        }
+        public static List<(DateTime period, decimal price, decimal movement)> ReadSAndPIndexFromDb()
+        {
+            var actualHistoryData = new List<(DateTime period, decimal price, decimal movement)>();
+            
+            using (var conn = PostgresDAL.getConnection())
+            {
+                string query = @"
+                    select year, month, indexval, growthrate
+                    from investmenttracker.sandpindex 
+                    order by year, month
+					;";
+                PostgresDAL.openConnection(conn);
+                using (DbCommand cmd = new DbCommand(query, conn))
+                {
+                    using (var reader = PostgresDAL.executeReader(cmd.npgsqlCommand))
+                    {
+                        while (reader.Read())
+                        {
+                            int year = PostgresDAL.getInt(reader, "year");
+                            int month = PostgresDAL.getInt(reader, "month");
+                            decimal indexval = PostgresDAL.getDecimal(reader, "indexval");
+                            decimal growthrate = PostgresDAL.getDecimal(reader, "growthrate");
+
+                            actualHistoryData.Add((
+                                new DateTime(year, month, 1), 
+                                indexval, 
+                                growthrate
+                                ));
+                        }
+                    }
+                }
+            }
+
+            return actualHistoryData;
         }
         public static List<Asset> ReadSimAssetsFromDb()
         {
@@ -340,6 +373,34 @@ namespace Lib
                 WriteNewTransactionToDb(t, a.Id);
             }
         }
+        public static void WriteNewConsumerPriceIndexToDb(int year, int month, decimal indexval, decimal growthrate)
+        {
+            using (var conn = PostgresDAL.getConnection())
+            {
+
+                string qParams = @"
+
+                    insert into investmenttracker.consumerpriceindex
+                    (year, month, indexval, growthrate) 
+                    values(@year, @month, @indexval, @growthrate);
+                        ";
+                PostgresDAL.openConnection(conn);
+                using (DbCommand cmd = new DbCommand(qParams, conn))
+                {
+                    cmd.AddParameter(new DbCommandParameter() { ParameterName = "year", DbType = ParamDbType.Integer, Value = year });
+                    cmd.AddParameter(new DbCommandParameter { ParameterName = "month", DbType = ParamDbType.Integer, Value = month });
+                    cmd.AddParameter(new DbCommandParameter { ParameterName = "indexval", DbType = ParamDbType.Numeric, Value = indexval });
+                    cmd.AddParameter(new DbCommandParameter { ParameterName = "growthrate", DbType = ParamDbType.Numeric, Value = growthrate });
+
+                    int numRowsAffected = PostgresDAL.executeNonQuery(cmd.npgsqlCommand);
+                    if (numRowsAffected != 1)
+                    {
+                        throw new Exception(string.Format("WriteNewSAndPIndexToDb data insert returned {0} rows. Expected 1.", numRowsAffected));
+                    }
+                }
+            }
+
+        }
         public static void WriteNewInvestMentVehicleToDb(InvestmentVehicle v)
         {
             using (var conn = PostgresDAL.getConnection())
@@ -368,6 +429,34 @@ namespace Lib
                         throw new Exception(string.Format("WriteInvestMentVehicleToDb data insert returned {0} rows. Expected 1.", numRowsAffected));
                     }
                     Logger.info(string.Format("New investment vehicle written to DB: {0}; {1};", v.Name, v.Symbol));
+                }
+            }
+
+        }
+        public static void WriteNewSAndPIndexToDb(int year, int month, decimal indexval, decimal growthrate)
+        {
+            using (var conn = PostgresDAL.getConnection())
+            {
+
+                string qParams = @"
+
+                    insert into investmenttracker.sandpindex
+                    (year, month, indexval, growthrate) 
+                    values(@year, @month, @indexval, @growthrate);
+                        ";
+                PostgresDAL.openConnection(conn);
+                using (DbCommand cmd = new DbCommand(qParams, conn))
+                {
+                    cmd.AddParameter(new DbCommandParameter() { ParameterName = "year", DbType = ParamDbType.Integer, Value = year });
+                    cmd.AddParameter(new DbCommandParameter { ParameterName = "month", DbType = ParamDbType.Integer, Value = month });
+                    cmd.AddParameter(new DbCommandParameter { ParameterName = "indexval", DbType = ParamDbType.Numeric, Value = indexval });
+                    cmd.AddParameter(new DbCommandParameter { ParameterName = "growthrate", DbType = ParamDbType.Numeric, Value = growthrate });
+
+                    int numRowsAffected = PostgresDAL.executeNonQuery(cmd.npgsqlCommand);
+                    if (numRowsAffected != 1)
+                    {
+                        throw new Exception(string.Format("WriteNewSAndPIndexToDb data insert returned {0} rows. Expected 1.", numRowsAffected));
+                    }
                 }
             }
 
@@ -437,7 +526,7 @@ namespace Lib
         }
         #endregion
 
-        #region montecarlobatch Functions
+        #region montecarlo Functions
         public static List<Guid> GetAllRunIdsForMCVersion(string montecarloversion)
         {
             List<Guid> outList = new List<Guid>();
@@ -471,7 +560,7 @@ namespace Lib
         public static List<MonteCarloBatch> GetRunsToEvolve(int numRowsToReturn, string monteCarloVersion)
         {
             int maxSimsAlreadyRun = 1100;
-            decimal minSuccessRate = 0.8M;
+            decimal minSuccessRate = 0.1M;// 0.8M;
             List<MonteCarloBatch> outList = new List<MonteCarloBatch>();
 
             using (var conn = PostgresDAL.getConnection())
@@ -577,7 +666,7 @@ namespace Lib
             List<MonteCarloBatch> outList = new List<MonteCarloBatch>();
 
             int maxSimsAlreadyRun = 1100;
-            decimal minSuccessRate = 0.8M;
+            decimal minSuccessRate = 0.1M;// 0.8M;
 
             using (var conn = PostgresDAL.getConnection())
             {
@@ -1111,6 +1200,6 @@ namespace Lib
             }
 
         }
-        #endregion montecarlobatch Functions
+        #endregion montecarlo Functions
     }
 }

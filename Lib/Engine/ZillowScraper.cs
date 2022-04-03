@@ -22,7 +22,9 @@ namespace Lib.Engine
 
             try
             {
-                using (IWebDriver driver = new ChromeDriver())
+                string chromeDriverDir = "./";
+
+                using (IWebDriver driver = new ChromeDriver(chromeDriverDir)) // ChromeDriver())
                 {
                     driver.Navigate().GoToUrl(url);
                     IWebElement values = driver.FindElement(By.Id("home-details-home-values"));

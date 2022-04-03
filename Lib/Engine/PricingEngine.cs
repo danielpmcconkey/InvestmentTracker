@@ -166,6 +166,7 @@ namespace Lib.Engine
             }
 
             // now do primary residence
+            
             if(_valuations.Where(x => x.InvestmentVehicle.Type == InvestmentVehicleType.PRIVATELY_HELD
                 && x.InvestmentVehicle.Name == "Primary residence"
                 && x.Date == today
@@ -173,11 +174,11 @@ namespace Lib.Engine
             {
                 string addressPortion = ConfigManager.GetString("ZillowAddressForUrl");
                 var currentHousePrice = ZillowScraper.GetCurrentPrice(addressPortion);
-                
-                _valuations.Add(currentHousePrice);
+                _valuations.Add(currentHousePrice);                
             }
-
             
+
+
             return _valuations;
         }
         public static Valuation GetPriceAtDate(InvestmentVehicle vehicle, DateTimeOffset dateTime)

@@ -84,7 +84,7 @@ namespace Lib.Engine.MonteCarlo
             runDate = DateTime.Now;
 
             simRuns = new List<SimulationRunResult>();
-
+            
             if (FEATURETOGGLE.MULTITHREAD)
             {
                 // first add blank SimulationRunResults so we can update each my index
@@ -137,6 +137,7 @@ namespace Lib.Engine.MonteCarlo
                     }
                 }
             }
+            
             Logger.info(string.Format("Run ID: {0} has completed.", runId.ToString()));
 
             populateAnalyticsFromRunResults();
