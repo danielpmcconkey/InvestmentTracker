@@ -60,7 +60,7 @@ FROM investmenttracker.montecarlobatch b
 left join investmenttracker.montecarlosimparameters p on b.runid = p.runid
 cross join configvals
 where 1=1
-and b.montecarloversion = '2022.02.23.014'
+and b.montecarloversion = '2022.04.04.015'
 and p.monthlySpendCoreToday = configvals.monthlySpendCoreToday
 and p.monthlyInvestBrokerage = configvals.monthlyInvestBrokerage
 --and b.runid = '61e3fcd2-cac0-4e2b-b88c-0e483bfb67c0'

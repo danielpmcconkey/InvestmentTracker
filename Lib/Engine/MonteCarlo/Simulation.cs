@@ -167,10 +167,6 @@ namespace Lib.Engine.MonteCarlo
                     {
                         logicTrace("run", "new year");
                         
-                        // add inflation
-                        decimal annualInflationPercent = RNG.getRandomDecimalWeighted(annualInflationLow, annualInflationHi);
-                        updateSpendForInflation(annualInflationPercent);
-                        updateInvestmentForInflation(annualInflationPercent);
 
                         // add RSU vesting
                         var annualRSUInvestmentPostTax = (long)Math.Round(annualRSUInvestmentPreTax * 0.6, 0);
@@ -182,6 +178,13 @@ namespace Lib.Engine.MonteCarlo
                     if (simulationRunDate.Day == 1)
                     {
                         logicTrace("run", "new month");
+
+                        // add inflation
+                        decimal monthlyInflationGrowth = marketDataSimulator
+                            .getMovementAtDateInflation(simulationRunDate); //RNG.getRandomDecimalWeighted(annualInflationLow, annualInflationHi);
+                        updateSpendForInflation(monthlyInflationGrowth);
+                        updateInvestmentForInflation(monthlyInflationGrowth);
+
                         // get paid, make 401k contributions
                         if (monthlyInvestRoth401k > 0)
                             invest(monthlyInvestRoth401k, TaxBucket.TAXFREE, null);
@@ -971,33 +974,38 @@ namespace Lib.Engine.MonteCarlo
             }
         }
         /// <summary>
-        /// update the monthlyInvestBrokerage amount once per year
+        /// update the monthlyInvestBrokerage amount once per month
         /// </summary>
-        private void updateInvestmentForInflation(decimal annualInflationPercent)
+        private void updateInvestmentForInflation(decimal monthlyInflationGrowth)
         {
             if (_isBankrupt) return;
             // don't assume you're smart enough to raise your investments with inflation
-            decimal actualInvestInflation = annualInflationPercent;
-            decimal cap = 0.02M;
-            if(annualInflationPercent > cap)
+            decimal actualInvestInflation = monthlyInflationGrowth;
+            decimal cap = 0.02M / 12.0M; // 2% in one year
+            if(monthlyInflationGrowth > cap)
             {
                 actualInvestInflation = cap;
+            }
+            // but also never go back
+            if(monthlyInflationGrowth < 0)
+            {
+                actualInvestInflation = 0;
             }
             monthlyInvestBrokerage += Convert.ToInt64(Math.Round(monthlyInvestBrokerage * actualInvestInflation));
             annualRSUInvestmentPreTax += Convert.ToInt64(Math.Round(annualRSUInvestmentPreTax * actualInvestInflation));
             monthlyNetSocialSecurityIncome += Convert.ToInt64(Math.Round(monthlyNetSocialSecurityIncome * actualInvestInflation));
             // income can follow true inflation
             monthlyGrossIncomePreRetirement += Convert.ToInt64(Math.Round(
-                monthlyGrossIncomePreRetirement * annualInflationPercent));
+                monthlyGrossIncomePreRetirement * monthlyInflationGrowth));
         }
         /// <summary>
-        /// update the monthlySpendLifeStyleToday amount once per year
+        /// update the monthlySpendLifeStyleToday amount every month
         /// </summary>
-        private void updateSpendForInflation(decimal annualInflationPercent)
+        private void updateSpendForInflation(decimal monthlyInflationGrowth)
         {
             if (_isBankrupt) return;
-            monthlySpendLifeStyleToday += Convert.ToInt64(Math.Round(monthlySpendLifeStyleToday * annualInflationPercent));
-            monthlySpendCoreToday += Convert.ToInt64(Math.Round(monthlySpendCoreToday * annualInflationPercent));
+            monthlySpendLifeStyleToday += Convert.ToInt64(Math.Round(monthlySpendLifeStyleToday * monthlyInflationGrowth));
+            monthlySpendCoreToday += Convert.ToInt64(Math.Round(monthlySpendCoreToday * monthlyInflationGrowth));
         }
         #endregion sim functions
 

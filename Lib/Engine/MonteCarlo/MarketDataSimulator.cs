@@ -9,9 +9,11 @@ namespace Lib.Engine.MonteCarlo
 {
     public class MarketDataSimulator
     {
-        private List<(DateTime period, decimal price, decimal movement)> actualHistoryData;
+        private List<(DateTime period, decimal price, decimal movement)> actualHistoryDataStockIndex;
+        private List<(DateTime period, decimal price, decimal movement)> actualHistoryDataCPI;
         private Dictionary<DateTime, (decimal price, decimal movement)> simulatedEquityData;
         private Dictionary<DateTime, (decimal price, decimal movement)> simulatedBondData;
+        private Dictionary<DateTime, decimal> simulatedInflationData;
         private DateTime start;
         private DateTime end;
         public List<(DateTime start, DateTime end)> recessions;
@@ -35,7 +37,36 @@ namespace Lib.Engine.MonteCarlo
         {
             createSimulatedBondData();
             createSimulatedEquityData();
+            createSimulatedInflationData();
             populateRecessionsList();
+        }
+        public decimal getMovementAtDateBond(DateTime period)
+        {
+            return simulatedBondData[period].movement;
+        }
+        public decimal getMovementAtDateEquity(DateTime period)
+        {
+            return simulatedEquityData[period].movement;
+        }
+        public decimal getMovementAtDateInflation(DateTime period)
+        {
+            return simulatedInflationData[period];
+        }
+        public decimal getPriceAtDateBond(DateTime period)
+        {
+            return simulatedBondData[period].price;
+        }
+        public decimal getPriceAtDateEquity(DateTime period)
+        {
+            return simulatedEquityData[period].price;
+        }
+        public bool isInRecession(DateTime period)
+        {
+            if (recessions.Where(x => x.start <= period && x.end >= period).Count() > 0)
+            {
+                return true;
+            }
+            return false;
         }
         private void createSimulatedBondData()
         {
@@ -58,59 +89,67 @@ namespace Lib.Engine.MonteCarlo
             populateActualHistory();
 
             // create a random offset
-            int numHistoricalPoints = actualHistoryData.Count;
+            int numHistoricalPoints = actualHistoryDataStockIndex.Count;
             int offset = RNG.getRandomInt(0, numHistoricalPoints);
 
             DateTime pointer = start;
             decimal priorValue = marketHistoryStartValue;
-            
+
             var roundedRetirement = DateTimeHelper.RoundToMonth(
                 ConfigManager.GetDateTime("RetirementDate"), RoundDateDirection.CLOSEST)
                 .Date;
-            
+
             while (pointer <= end)
             {
-                offset = (actualHistoryData.Count > offset) ? offset : 0;
-                decimal movement = actualHistoryData[offset].movement;
+                offset = (actualHistoryDataStockIndex.Count > offset) ? offset : 0;
+                decimal movement = actualHistoryDataStockIndex[offset].movement;
                 decimal newValue = priorValue + (movement * priorValue);
                 priorValue = newValue;
                 simulatedEquityData.Add(pointer, (newValue, movement));
-                
+
                 // figure out when our retirement date analog is
-                if (pointer == roundedRetirement) retirementDateHistoricalAnalog = actualHistoryData[offset].period;
-                
+                if (pointer == roundedRetirement) retirementDateHistoricalAnalog = actualHistoryDataStockIndex[offset].period;
+
                 // and move everything forward by 1
                 pointer = pointer.AddMonths(1);
                 offset++;
             }
         }
-        public decimal getMovementAtDateBond(DateTime period)
+        private void createSimulatedInflationData()
         {
-            return simulatedBondData[period].movement;
-        }
-        public decimal getPriceAtDateBond(DateTime period)
-        {
-            return simulatedBondData[period].price;
-        }
-        public decimal getMovementAtDateEquity(DateTime period)
-        {
-            return simulatedEquityData[period].movement;
-        }
-        public decimal getPriceAtDateEquity(DateTime period)
-        {
-            return simulatedEquityData[period].price;
-        }
-        public bool isInRecession(DateTime period)
-        {
-            if (recessions.Where(x => x.start <= period && x.end >= period).Count() > 0)
+            simulatedInflationData = new Dictionary<DateTime, decimal>();
+
+
+            // create a random offset
+            // this is a different offset from stock index to truly get variation
+            // this may not reflect reality as often the stock market
+            // and inflation affect each other, but it gives us more 
+            // more variability in our sims
+            int numHistoricalPoints = actualHistoryDataCPI.Count;
+            int offset = RNG.getRandomInt(0, numHistoricalPoints);
+
+            DateTime pointer = start;
+            //decimal priorValue = marketHistoryStartValue;
+
+            var roundedRetirement = DateTimeHelper.RoundToMonth(
+                ConfigManager.GetDateTime("RetirementDate"), RoundDateDirection.CLOSEST)
+                .Date;
+
+            while (pointer <= end)
             {
-                return true;
+                offset = (actualHistoryDataStockIndex.Count > offset) ? offset : 0;
+                decimal movement = actualHistoryDataStockIndex[offset].movement;
+                simulatedInflationData.Add(pointer, movement);
+                                
+                // and move everything forward by 1
+                pointer = pointer.AddMonths(1);
+                offset++;
             }
-            return false;
         }
         private void populateActualHistory()
         {
-            actualHistoryData = DataAccessLayer.ReadSAndPIndexFromDb();
+            actualHistoryDataStockIndex = DataAccessLayer.ReadSAndPIndexFromDb();
+            actualHistoryDataCPI = DataAccessLayer.ReadConsumerPriceIndexFromDb();
         }
         private void populateRecessionsList()
         {

@@ -109,6 +109,41 @@ namespace Lib
 
             return outList;
         }
+        public static List<(DateTime period, decimal price, decimal movement)> ReadConsumerPriceIndexFromDb()
+        {
+            var actualHistoryData = new List<(DateTime period, decimal price, decimal movement)>();
+
+            using (var conn = PostgresDAL.getConnection())
+            {
+                string query = @"
+                    select year, month, indexval, growthrate
+                    from investmenttracker.consumerpriceindex 
+                    order by year, month
+					;";
+                PostgresDAL.openConnection(conn);
+                using (DbCommand cmd = new DbCommand(query, conn))
+                {
+                    using (var reader = PostgresDAL.executeReader(cmd.npgsqlCommand))
+                    {
+                        while (reader.Read())
+                        {
+                            int year = PostgresDAL.getInt(reader, "year");
+                            int month = PostgresDAL.getInt(reader, "month");
+                            decimal indexval = PostgresDAL.getDecimal(reader, "indexval");
+                            decimal growthrate = PostgresDAL.getDecimal(reader, "growthrate");
+
+                            actualHistoryData.Add((
+                                new DateTime(year, month, 1),
+                                indexval,
+                                growthrate
+                                ));
+                        }
+                    }
+                }
+            }
+
+            return actualHistoryData;
+        }
         public static Dictionary<Guid, InvestmentVehicle> ReadInvestmentVehiclesFromDb()
         {
             Dictionary<Guid, InvestmentVehicle> outList = new Dictionary<Guid, InvestmentVehicle>();
