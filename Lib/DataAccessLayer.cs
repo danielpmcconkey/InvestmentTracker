@@ -220,6 +220,75 @@ namespace Lib
 
             return outList;
         }
+        public static List<(int count, decimal sAndPGrowthRate, decimal cpiGrowthRate)> ReadAnnualGrowthRateOccuranceCounts()
+        {
+            var counts = new List<(int count, decimal sAndPGrowthRate, decimal cpiGrowthRate)>();
+
+            using (var conn = PostgresDAL.getConnection())
+            {
+                string query = @"
+                    /* 
+                      annual growth rates across indecies
+                      this joins annual growth rates of S&P and CPI
+                      by year and ranks how common the combination is
+                    */
+                    with roundedrates as (
+	                    select 
+		                    sp.year,
+		                    sp.month,
+		                    sp.indexval as spvalue,
+		                    spprior.indexval as sppriorvalue,
+		                    cpi.indexval as cpivalue,
+		                    round((sp.indexval - spprior.indexval) / spprior.indexval,2) as spgrowth,
+		                    round((cpi.indexval - cpiprior.indexval) / cpiprior.indexval,2) as cpigrowth
+	                    from investmenttracker.sandpindex sp
+	                    left join investmenttracker.consumerpriceindex cpi
+		                    on sp.year = cpi.year
+		                    and sp.month = cpi.month
+	                    left join investmenttracker.sandpindex spprior
+		                    on sp.year = spprior.year + 1
+		                    and sp.month = spprior.month
+	                    left join investmenttracker.consumerpriceindex cpiprior
+		                    on cpi.year = cpiprior.year + 1
+		                    and cpi.month = cpiprior.month
+	                    where sp.year >= 1946
+		                    and sp.month = 12
+	                    order by sp.year, sp.month
+                    )
+                    select 
+	                    count(*) as count,
+	                    spgrowth,
+	                    cpigrowth
+                    from roundedrates
+                    group by 
+	                    spgrowth,
+	                    cpigrowth
+                    order by 1 desc
+                    ;";
+                PostgresDAL.openConnection(conn);
+                using (DbCommand cmd = new DbCommand(query, conn))
+                {
+                    using (var reader = PostgresDAL.executeReader(cmd.npgsqlCommand))
+                    {
+                        while (reader.Read())
+                        {
+                            int count = PostgresDAL.getInt(reader, "count");
+                            decimal sAndPGrowthRate = PostgresDAL.getDecimal(reader, "spgrowth");
+                            decimal cpiGrowthRate = PostgresDAL.getDecimal(reader, "cpigrowth");
+
+                            counts.Add((
+                                count,
+                                sAndPGrowthRate,
+                                cpiGrowthRate
+                                ));
+                        }
+                    }
+                }
+            }
+
+            return counts;
+
+        }
         public static List<(DateTime period, decimal price, decimal movement)> ReadSAndPIndexFromDb()
         {
             var actualHistoryData = new List<(DateTime period, decimal price, decimal movement)>();
@@ -595,7 +664,7 @@ namespace Lib
         public static List<MonteCarloBatch> GetRunsToEvolve(int numRowsToReturn, string monteCarloVersion)
         {
             int maxSimsAlreadyRun = 1100;
-            decimal minSuccessRate = 0.1M;// 0.8M;
+            decimal minSuccessRate = 0.85M;
             List<MonteCarloBatch> outList = new List<MonteCarloBatch>();
 
             using (var conn = PostgresDAL.getConnection())
@@ -611,8 +680,8 @@ namespace Lib
                     and p.monthlySpendCoreToday = @monthlySpendCoreToday
                     and p.monthlyInvestBrokerage = @monthlyInvestBrokerage
                     and numberofsimstorun < @maxSimsAlreadyRun
-                    and (b.analytics->'successRateBadYears')::varchar(17)::numeric(4,3) >= @minSuccessRate
-                    order by ((b.analytics->'averageLifeStyleSpendSuccessfulBadYears')::varchar(17)::numeric * (b.analytics->'successRateBadYears')::varchar(17)::numeric) desc
+                    and (b.analytics->'successRateOverall')::varchar(17)::numeric(4,3) >= @minSuccessRate
+                    order by (b.analytics->'medianLifeStyleSpend')::varchar(17)::numeric(14,2) * (b.analytics->'successRateOverall')::varchar(17)::numeric(4,3) desc
                     limit(@numRowsToReturn)
                     ;
                 ";
@@ -701,15 +770,13 @@ namespace Lib
             List<MonteCarloBatch> outList = new List<MonteCarloBatch>();
 
             int maxSimsAlreadyRun = 1100;
-            decimal minSuccessRate = 0.1M;// 0.8M;
+            decimal minSuccessRate = 0.85M;
 
             using (var conn = PostgresDAL.getConnection())
             {
                 string query = @"
                     SELECT 
                         sum(b.numberofsimstorun) as numRunsTotal,
-                        avg((b.analytics->'averageLifeStyleSpendBadYears')::varchar(17)::numeric(14,2)) as averageLifeStyleSpendBadYears,
-                        avg((b.analytics->'successRateBadYears')::varchar(17)::numeric(4,3)) as successRateBadYears,
                         p.retirementdate,
                         p.monthlySpendLifeStyleToday,
                         p.monthlySpendCoreToday,
@@ -738,7 +805,7 @@ namespace Lib
                     and b.montecarloversion = @monteCarloVersion
                     and p.monthlySpendCoreToday = @monthlySpendCoreToday
                     and p.monthlyInvestBrokerage = @monthlyInvestBrokerage
-                    and (b.analytics->'successRateBadYears')::varchar(17)::numeric(4,3) >= @minSuccessRate
+                    and (b.analytics->'successRateOverall')::varchar(17)::numeric(4,3) >= @minSuccessRate
                     group by
                         p.retirementdate,
                         p.monthlySpendLifeStyleToday,
@@ -763,7 +830,7 @@ namespace Lib
                         p.annualInflationHi,
                         p.socialSecurityCollectionAge
                     having sum(b.numberofsimstorun) < @maxSimsAlreadyRun
-                    order by avg((b.analytics->'averageLifeStyleSpendSuccessfulBadYears')::varchar(17)::numeric * (b.analytics->'successRateBadYears')::varchar(17)::numeric) desc
+                    order by avg((b.analytics->'medianLifeStyleSpend')::varchar(17)::numeric * (b.analytics->'successRateOverall')::varchar(17)::numeric) desc
                     limit (@numRowsToReturn)
                     ;
                 ";
@@ -862,7 +929,7 @@ namespace Lib
         public static MonteCarloBatch GetSingleBestRun(string monteCarloVersion)
         {
             int minSimsAlreadyRun = 1100;
-            decimal minSuccessRate = 0.1M; // 0.8M;
+            decimal minSuccessRate = 0.85M;
             int numRowsToReturn = 1;
 
             using (var conn = PostgresDAL.getConnection())
@@ -877,8 +944,8 @@ namespace Lib
                     and p.monthlySpendCoreToday = @monthlySpendCoreToday
                     and p.monthlyInvestBrokerage = @monthlyInvestBrokerage
                     and numberofsimstorun >= @minSimsAlreadyRun
-                    and (b.analytics->'successRateBadYears')::varchar(17)::numeric(4,3) >= @minSuccessRate
-                    order by ((b.analytics->'averageLifeStyleSpendSuccessfulBadYears')::varchar(17)::numeric * (b.analytics->'successRateBadYears')::varchar(17)::numeric) desc
+                    and (b.analytics->'successRateOverall')::varchar(17)::numeric(4,3) >= @minSuccessRate
+                    order by (b.analytics->'medianLifeStyleSpend')::varchar(17)::numeric(14,2) * (b.analytics->'successRateOverall')::varchar(17)::numeric(4,3) desc
                     limit(@numRowsToReturn)
                     ;
                 ";

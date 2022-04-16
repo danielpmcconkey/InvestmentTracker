@@ -36,8 +36,9 @@ namespace Lib.Engine.MonteCarlo
         public void createMarketHistory()
         {
             createSimulatedBondData();
-            createSimulatedEquityData();
-            createSimulatedInflationData();
+            //createSimulatedEquityData();
+            //createSimulatedInflationData();
+            createSimulatedCombinedData();
             populateRecessionsList();
         }
         public decimal getMovementAtDateBond(DateTime period)
@@ -80,6 +81,134 @@ namespace Lib.Engine.MonteCarlo
                 decimal newValue = priorValue + (movement * priorValue);
                 priorValue = newValue;
                 simulatedBondData.Add(pointer, (newValue, movement));
+                pointer = pointer.AddMonths(1);
+            }
+        }
+        private void createSimulatedCombinedData()
+        {
+            simulatedEquityData = new Dictionary<DateTime, (decimal price, decimal movement)>();
+            simulatedInflationData = new Dictionary<DateTime, decimal>();
+
+            // get the liklihood of year-over-year movement
+            List<(int countL, decimal sAndPGrowthRate, decimal cpiGrowthRate)> historicalRates = DataAccessLayer
+                .ReadAnnualGrowthRateOccuranceCounts();
+            
+            // now create a rates table that is populated by the rates based on their probability
+            int totalRateTableRows = historicalRates.Sum(x => x.countL); // 75
+            (decimal sAndPGrowthRate, decimal cpiGrowthRate)[] ratesTable = new
+                (decimal sAndPGrowthRate, decimal cpiGrowthRate)[totalRateTableRows];
+
+            int ratesTableIndex = 0;
+            foreach (var rateRow in historicalRates)
+            {
+                for (int i = 0; i < rateRow.countL; i++)
+                {
+                    ratesTable[ratesTableIndex] = (rateRow.sAndPGrowthRate, rateRow.cpiGrowthRate);
+                    ratesTableIndex++;
+                }
+            }
+            // now build imaginary years forward
+            var justPrices = new Dictionary<DateTime, (decimal equityPrice, decimal inflationPrice)>();
+            // first draw straight lines
+            DateTime pointer = start;
+            decimal thisYearsSAndPVal = marketHistoryStartValue;
+            decimal nextYearsSAndPVal = thisYearsSAndPVal; // placeholder. update in the while loop
+            decimal thisYearsCpiVal = marketHistoryStartValue;
+            decimal nextYearsCpiVal = thisYearsCpiVal; // placeholder. update in the while loop
+
+            int currentMonth = pointer.Month;
+            int monthInYear = 0; // use this to rebaseline this month to 0
+            decimal growthInYearSandP = 0;
+            decimal growthPerMonthSandP = 0;
+            decimal growthInYearCpi = 0;
+            decimal growthPerMonthCpi = 0;
+
+            while (pointer <= end)
+            {
+                if(pointer.Month == currentMonth)
+                {
+                    monthInYear = 0;
+                    // exchange values
+                    thisYearsSAndPVal = nextYearsSAndPVal;
+                    thisYearsCpiVal= nextYearsCpiVal;
+                    // re-target
+                    ratesTableIndex = RNG.getRandomInt(0, totalRateTableRows - 1);
+                    decimal sAndPGrowthRate = ratesTable[ratesTableIndex].sAndPGrowthRate;
+                    decimal cpiGrowthRate = ratesTable[ratesTableIndex].cpiGrowthRate;
+                    
+                    growthInYearSandP = (thisYearsSAndPVal * sAndPGrowthRate);
+                    growthPerMonthSandP = growthInYearSandP / 12M;
+
+                    growthInYearCpi = (thisYearsCpiVal * cpiGrowthRate);
+                    growthPerMonthCpi = growthInYearCpi / 12M;
+
+                    nextYearsSAndPVal += growthInYearSandP;
+                    nextYearsCpiVal += growthInYearCpi;
+                }
+
+                decimal sAndPValAtMonth = thisYearsSAndPVal + (growthPerMonthSandP * monthInYear);
+                decimal cpiValAtMonth = thisYearsCpiVal + (growthPerMonthCpi * monthInYear);
+                justPrices.Add(pointer, (sAndPValAtMonth, cpiValAtMonth));
+
+                pointer = pointer.AddMonths(1);
+                monthInYear++;
+            }
+            
+            // now add random fluctuations
+            pointer = start;
+            while (pointer <= end)
+            {
+                decimal randFlucSandP = RNG.getRandomDecimal(-0.03M, 0.03M);
+                decimal randFlucCpi = RNG.getRandomDecimal(-0.01M, 0.01M);
+                justPrices[pointer] = (
+                    justPrices[pointer].equityPrice + (justPrices[pointer].equityPrice * randFlucSandP),
+                    justPrices[pointer].inflationPrice + (justPrices[pointer].inflationPrice * randFlucCpi)
+                    );
+
+                pointer = pointer.AddMonths(1);
+            }
+            /*
+             * log just prices
+             * 
+             * 
+             * 
+             * 
+             * 
+             * */
+            //StringBuilder sb = new StringBuilder();
+            //sb.AppendLine(string.Format("{0},{1},{2}", "date", "equityPrice", "inflationPrice"));
+            //foreach (var row in justPrices)
+            //{
+            //    sb.AppendLine(string.Format("{0},{1},{2}", row.Key.ToString("d"), row.Value.equityPrice, row.Value.inflationPrice));
+            //}
+            //Logger.info(sb.ToString());
+            /*
+             * 
+             * 
+             * 
+             * 
+             * 
+             * end log just prices
+             * */
+
+            // now build the simulated equity and inflation tables
+            simulatedEquityData = new Dictionary<DateTime, (decimal price, decimal movement)>();
+            simulatedInflationData = new Dictionary<DateTime, decimal>();
+            decimal priorSandPVal = justPrices[start].equityPrice;
+            decimal priorCpiVal = justPrices[start].inflationPrice;
+            pointer = start;
+            while (pointer <= end)
+            {
+                var thisRow = justPrices[pointer];
+                decimal growthSandP = (thisRow.equityPrice - priorSandPVal) / priorSandPVal;
+                decimal growthCpi = (thisRow.inflationPrice - priorCpiVal) / priorCpiVal;
+
+                simulatedEquityData.Add(pointer,(thisRow.equityPrice, growthSandP));
+                simulatedInflationData.Add(pointer, growthCpi);
+
+                priorSandPVal = thisRow.equityPrice;
+                priorCpiVal = thisRow.inflationPrice;
+
                 pointer = pointer.AddMonths(1);
             }
         }

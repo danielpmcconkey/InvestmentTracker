@@ -190,7 +190,19 @@ namespace Lib.Engine.MonteCarlo
         {
             CheckClucth();
 
-            MonteCarloBatch mc = DataAccessLayer.GetSingleBestRun(MonteCarloBatch.monteCarloVersion);
+            MonteCarloBatch mc = new MonteCarloBatch();
+
+            try
+            {
+                mc = DataAccessLayer.GetSingleBestRun(MonteCarloBatch.monteCarloVersion);
+            }
+            catch (Exception)
+            {
+                // if you're using a new Monte Carlo version there won't be
+                // anything in the DB to pull, so create from config
+                mc.simParams = GetSimulationParametersFromConfig();
+                mc.runId = Guid.NewGuid();
+            }
             mc.numberOfSimsToRun = ConfigManager.GetInt("numberOfSimsToRun");
             mc.assetsGoingIn = assetsGoingIn;
             mc.runBatch();
@@ -204,78 +216,25 @@ namespace Lib.Engine.MonteCarlo
                 CheckClucth();
 
                 // pull from default configs
-                var retirementDate = ConfigManager.GetDateTime("RetirementDate");
-                var birthDate = ConfigManager.GetDateTime("BirthDate");
-                var monthlyGrossIncomePreRetirement = ConfigManager.GetDecimal("AnnualIncome") / 12.0m;
-                var monthlyNetSocialSecurityIncome = ConfigManager.GetDecimal("monthlyNetSocialSecurityIncome");
-                var monthlySpendLifeStyleToday = ConfigManager.GetDecimal("monthlySpendLifeStyleToday");
-                var monthlySpendCoreToday = ConfigManager.GetDecimal("monthlySpendCoreToday");
-                var monthlyInvestRoth401k = ConfigManager.GetDecimal("monthlyInvestRoth401k");
-                var monthlyInvestTraditional401k = ConfigManager.GetDecimal("monthlyInvestTraditional401k");
-                var monthlyInvestBrokerage = ConfigManager.GetDecimal("monthlyInvestBrokerage");
-                var monthlyInvestHSA = ConfigManager.GetDecimal("monthlyInvestHSA");
-                var annualRSUInvestmentPreTax = ConfigManager.GetDecimal("annualRSUInvestmentPreTax");
-                var xMinusAgeStockPercentPreRetirement = ConfigManager.GetDecimal("xMinusAgeStockPercentPreRetirement");
-                var numYearsCashBucketInRetirement = ConfigManager.GetDecimal("numYearsCashBucketInRetirement");
-                var numYearsBondBucketInRetirement = ConfigManager.GetDecimal("numYearsBondBucketInRetirement");
-                var recessionRecoveryPercent = ConfigManager.GetDecimal("recessionRecoveryPercent");
-                var shouldMoveEquitySurplussToFillBondGapAlways = ConfigManager.GetBool("shouldMoveEquitySurplussToFillBondGapAlways");
-                var deathAgeOverride = ConfigManager.GetInt("deathAgeOverride");
-                var recessionLifestyleAdjustment = ConfigManager.GetDecimal("recessionLifestyleAdjustment");
-                var retirementLifestyleAdjustment = ConfigManager.GetDecimal("retirementLifestyleAdjustment");
-                var maxSpendingPercentWhenBelowRetirementLevelEquity = ConfigManager.GetDecimal("maxSpendingPercentWhenBelowRetirementLevelEquity");
-                var annualInflationLow = ConfigManager.GetDecimal("annualInflationLow");
-                var annualInflationHi = ConfigManager.GetDecimal("annualInflationHi");
-                var socialSecurityCollectionAge = ConfigManager.GetDecimal("socialSecurityCollectionAge");
-                var livingLargeThreashold = ConfigManager.GetDecimal("livingLargeThreashold");
-                var livingLargeLifestyleSpendMultiplier = ConfigManager.GetDecimal("livingLargeLifestyleSpendMultiplier");
-
+                var simParams = GetSimulationParametersFromConfig();
                 // now randomize some
-                monthlySpendLifeStyleToday = RNG.getRandomDecimal(
-                    monthlySpendLifeStyleToday * 0.5M, monthlySpendLifeStyleToday * 2M);
-                xMinusAgeStockPercentPreRetirement = RNG.getRandomDecimal(
-                    xMinusAgeStockPercentPreRetirement * 0.5M, xMinusAgeStockPercentPreRetirement * 2M);
-                numYearsCashBucketInRetirement = RNG.getRandomDecimal(
-                    numYearsCashBucketInRetirement * 0.25M, numYearsCashBucketInRetirement * 4M);
-                numYearsBondBucketInRetirement = RNG.getRandomDecimal(
-                    numYearsBondBucketInRetirement * 0.25M, numYearsBondBucketInRetirement * 4M);
-                recessionRecoveryPercent = RNG.getRandomDecimal(0.8M, 1.25M);
-                shouldMoveEquitySurplussToFillBondGapAlways = RNG.getRandomBool();
-                recessionLifestyleAdjustment = RNG.getRandomDecimal(0.0M, 1.0M);
-                retirementLifestyleAdjustment = RNG.getRandomDecimal(0.0M, 1.0M);
-                maxSpendingPercentWhenBelowRetirementLevelEquity = RNG.getRandomDecimal(0.0M, 1.0M);
-                livingLargeThreashold = RNG.getRandomDecimal(1.2M, 5.0M);
-                livingLargeLifestyleSpendMultiplier = RNG.getRandomDecimal(1.2M, 5.0M);
+                simParams.monthlySpendLifeStyleToday = RNG.getRandomDecimal(
+                    simParams.monthlySpendLifeStyleToday * 0.5M, simParams.monthlySpendLifeStyleToday * 2M);
+                simParams.xMinusAgeStockPercentPreRetirement = RNG.getRandomDecimal(
+                    simParams.xMinusAgeStockPercentPreRetirement * 0.5M, simParams.xMinusAgeStockPercentPreRetirement * 2M);
+                simParams.numYearsCashBucketInRetirement = RNG.getRandomDecimal(
+                    simParams.numYearsCashBucketInRetirement * 0.25M, simParams.numYearsCashBucketInRetirement * 4M);
+                simParams.numYearsBondBucketInRetirement = RNG.getRandomDecimal(
+                    simParams.numYearsBondBucketInRetirement * 0.25M, simParams.numYearsBondBucketInRetirement * 4M);
+                simParams.recessionRecoveryPercent = RNG.getRandomDecimal(0.8M, 1.25M);
+                simParams.shouldMoveEquitySurplussToFillBondGapAlways = RNG.getRandomBool();
+                simParams.recessionLifestyleAdjustment = RNG.getRandomDecimal(0.0M, 1.0M);
+                simParams.retirementLifestyleAdjustment = RNG.getRandomDecimal(0.0M, 1.0M);
+                simParams.maxSpendingPercentWhenBelowRetirementLevelEquity = RNG.getRandomDecimal(0.0M, 1.0M);
+                simParams.livingLargeThreashold = RNG.getRandomDecimal(1.2M, 5.0M);
+                simParams.livingLargeLifestyleSpendMultiplier = RNG.getRandomDecimal(1.2M, 5.0M);
 
-                SimulationParameters simParams = new SimulationParameters()
-                {
-                    startDate = DateTime.Now.Date,
-                    retirementDate = retirementDate,
-                    birthDate = birthDate,
-                    monthlyGrossIncomePreRetirement = monthlyGrossIncomePreRetirement,
-                    monthlyNetSocialSecurityIncome = monthlyNetSocialSecurityIncome,
-                    monthlySpendLifeStyleToday = monthlySpendLifeStyleToday,
-                    monthlySpendCoreToday = monthlySpendCoreToday,
-                    monthlyInvestRoth401k = monthlyInvestRoth401k,
-                    monthlyInvestTraditional401k = monthlyInvestTraditional401k,
-                    monthlyInvestBrokerage = monthlyInvestBrokerage,
-                    monthlyInvestHSA = monthlyInvestHSA,
-                    annualRSUInvestmentPreTax = annualRSUInvestmentPreTax,
-                    xMinusAgeStockPercentPreRetirement = xMinusAgeStockPercentPreRetirement,
-                    numYearsCashBucketInRetirement = numYearsCashBucketInRetirement,
-                    numYearsBondBucketInRetirement = numYearsBondBucketInRetirement,
-                    recessionRecoveryPercent = recessionRecoveryPercent,
-                    shouldMoveEquitySurplussToFillBondGapAlways = shouldMoveEquitySurplussToFillBondGapAlways,
-                    deathAgeOverride = deathAgeOverride,
-                    recessionLifestyleAdjustment = recessionLifestyleAdjustment,
-                    retirementLifestyleAdjustment = retirementLifestyleAdjustment,
-                    maxSpendingPercentWhenBelowRetirementLevelEquity = maxSpendingPercentWhenBelowRetirementLevelEquity,
-                    annualInflationLow = annualInflationLow,
-                    annualInflationHi = annualInflationHi,
-                    socialSecurityCollectionAge = socialSecurityCollectionAge,
-                    livingLargeThreashold = livingLargeThreashold,
-                    livingLargeLifestyleSpendMultiplier = livingLargeLifestyleSpendMultiplier,
-                };
+                
                 List<Asset> assetsGoingIn = DataAccessLayer.ReadSimAssetsFromDb();
 
                 int numberOfSimsToRun = ConfigManager.GetInt("numberOfSimsToRun");
@@ -495,6 +454,69 @@ namespace Lib.Engine.MonteCarlo
 
             }
             return graphSeries;
+        }
+        private static SimulationParameters GetSimulationParametersFromConfig()
+        {
+            // pull from default configs
+            var retirementDate = ConfigManager.GetDateTime("RetirementDate");
+            var birthDate = ConfigManager.GetDateTime("BirthDate");
+            var monthlyGrossIncomePreRetirement = ConfigManager.GetDecimal("AnnualIncome") / 12.0m;
+            var monthlyNetSocialSecurityIncome = ConfigManager.GetDecimal("monthlyNetSocialSecurityIncome");
+            var monthlySpendLifeStyleToday = ConfigManager.GetDecimal("monthlySpendLifeStyleToday");
+            var monthlySpendCoreToday = ConfigManager.GetDecimal("monthlySpendCoreToday");
+            var monthlyInvestRoth401k = ConfigManager.GetDecimal("monthlyInvestRoth401k");
+            var monthlyInvestTraditional401k = ConfigManager.GetDecimal("monthlyInvestTraditional401k");
+            var monthlyInvestBrokerage = ConfigManager.GetDecimal("monthlyInvestBrokerage");
+            var monthlyInvestHSA = ConfigManager.GetDecimal("monthlyInvestHSA");
+            var annualRSUInvestmentPreTax = ConfigManager.GetDecimal("annualRSUInvestmentPreTax");
+            var xMinusAgeStockPercentPreRetirement = ConfigManager.GetDecimal("xMinusAgeStockPercentPreRetirement");
+            var numYearsCashBucketInRetirement = ConfigManager.GetDecimal("numYearsCashBucketInRetirement");
+            var numYearsBondBucketInRetirement = ConfigManager.GetDecimal("numYearsBondBucketInRetirement");
+            var recessionRecoveryPercent = ConfigManager.GetDecimal("recessionRecoveryPercent");
+            var shouldMoveEquitySurplussToFillBondGapAlways = ConfigManager.GetBool("shouldMoveEquitySurplussToFillBondGapAlways");
+            var deathAgeOverride = ConfigManager.GetInt("deathAgeOverride");
+            var recessionLifestyleAdjustment = ConfigManager.GetDecimal("recessionLifestyleAdjustment");
+            var retirementLifestyleAdjustment = ConfigManager.GetDecimal("retirementLifestyleAdjustment");
+            var maxSpendingPercentWhenBelowRetirementLevelEquity = ConfigManager.GetDecimal("maxSpendingPercentWhenBelowRetirementLevelEquity");
+            var annualInflationLow = ConfigManager.GetDecimal("annualInflationLow");
+            var annualInflationHi = ConfigManager.GetDecimal("annualInflationHi");
+            var socialSecurityCollectionAge = ConfigManager.GetDecimal("socialSecurityCollectionAge");
+            var livingLargeThreashold = ConfigManager.GetDecimal("livingLargeThreashold");
+            var livingLargeLifestyleSpendMultiplier = ConfigManager.GetDecimal("livingLargeLifestyleSpendMultiplier");
+
+            
+
+            SimulationParameters simParams = new SimulationParameters()
+            {
+                startDate = DateTime.Now.Date,
+                retirementDate = retirementDate,
+                birthDate = birthDate,
+                monthlyGrossIncomePreRetirement = monthlyGrossIncomePreRetirement,
+                monthlyNetSocialSecurityIncome = monthlyNetSocialSecurityIncome,
+                monthlySpendLifeStyleToday = monthlySpendLifeStyleToday,
+                monthlySpendCoreToday = monthlySpendCoreToday,
+                monthlyInvestRoth401k = monthlyInvestRoth401k,
+                monthlyInvestTraditional401k = monthlyInvestTraditional401k,
+                monthlyInvestBrokerage = monthlyInvestBrokerage,
+                monthlyInvestHSA = monthlyInvestHSA,
+                annualRSUInvestmentPreTax = annualRSUInvestmentPreTax,
+                xMinusAgeStockPercentPreRetirement = xMinusAgeStockPercentPreRetirement,
+                numYearsCashBucketInRetirement = numYearsCashBucketInRetirement,
+                numYearsBondBucketInRetirement = numYearsBondBucketInRetirement,
+                recessionRecoveryPercent = recessionRecoveryPercent,
+                shouldMoveEquitySurplussToFillBondGapAlways = shouldMoveEquitySurplussToFillBondGapAlways,
+                deathAgeOverride = deathAgeOverride,
+                recessionLifestyleAdjustment = recessionLifestyleAdjustment,
+                retirementLifestyleAdjustment = retirementLifestyleAdjustment,
+                maxSpendingPercentWhenBelowRetirementLevelEquity = maxSpendingPercentWhenBelowRetirementLevelEquity,
+                annualInflationLow = annualInflationLow,
+                annualInflationHi = annualInflationHi,
+                socialSecurityCollectionAge = socialSecurityCollectionAge,
+                livingLargeThreashold = livingLargeThreashold,
+                livingLargeLifestyleSpendMultiplier = livingLargeLifestyleSpendMultiplier,
+            };
+
+            return simParams;
         }
         private static (GraphSeries, GraphSeries) Get90PercentFromSimResults(List<SimulationRunResult> simResults, DateTime birthDate)
         {

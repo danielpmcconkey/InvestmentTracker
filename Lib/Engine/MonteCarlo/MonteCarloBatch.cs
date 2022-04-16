@@ -11,7 +11,7 @@ namespace Lib.Engine.MonteCarlo
     public class MonteCarloBatch
     {
         public Guid runId { get; set; }
-        public const string monteCarloVersion = "2022.04.04.015";
+        public const string monteCarloVersion = "2022.04.15.016";
         public DateTime runDate { get; set; }
         public SimulationParameters simParams { get; set; }
         public List<SimulationRunResult> simRuns { get; set; }
@@ -27,7 +27,6 @@ namespace Lib.Engine.MonteCarlo
         public MonteCarloBatch(SimulationParameters simParams, List<Asset> assetsGoingIn,
             int numberOfSimsToRun)
         {
-            //monteCarloVersion = "2021.08.16.009"; 
             runId = Guid.NewGuid();
             this.simParams = simParams;
             this.assetsGoingIn = assetsGoingIn;
@@ -204,29 +203,29 @@ namespace Lib.Engine.MonteCarlo
                 analytics.wealthAtDeath95Percent = (successes95Percent.Count < 1) ? -10.0m
                     : successes95Percent.Max(x => x.wealthAtDeath);
 
-                /* get stats for the worst years to retire
-                 * according to a run of 50,000 with fairly 
-                 * vanilla settings, the worst years to retire
-                 * were 1928 - 1938, 1974-1975, 2013-2020
-                 */
-                int[] badYears = new int[] { 1928, 1929, 1930, 1931, 1932, 1933, 1934, 1935, 1936, 1937, 1938, 1939, 1974, 1975, 2013, 2014, 2015, 2016, 2017, 2018, 2019, 2020 };
-                var badYearRuns = simRuns.Where(x => 
-                    badYears.Contains(x.retirementDateHistoricalAnalog.Year));
-                var goodYearRuns = simRuns.Where(x => 
-                    (badYears.Contains(x.retirementDateHistoricalAnalog.Year)) == false);
-                var badYearBankruptcies = badYearRuns.Where(x => x.wasSuccessful == false).Count();
-                var badYearSuccesses = badYearRuns.Where(x => x.wasSuccessful == true).Count();
-                var goodYearBankruptcies = goodYearRuns.Where(x => x.wasSuccessful == false).Count();
-                var goodYearSuccesses = goodYearRuns.Where(x => x.wasSuccessful == true).Count();
+                ///* get stats for the worst years to retire
+                // * according to a run of 50,000 with fairly 
+                // * vanilla settings, the worst years to retire
+                // * were 1928 - 1938, 1974-1975, 2013-2020
+                // */
+                //int[] badYears = new int[] { 1928, 1929, 1930, 1931, 1932, 1933, 1934, 1935, 1936, 1937, 1938, 1939, 1974, 1975, 2013, 2014, 2015, 2016, 2017, 2018, 2019, 2020 };
+                //var badYearRuns = simRuns.Where(x => 
+                //    badYears.Contains(x.retirementDateHistoricalAnalog.Year));
+                //var goodYearRuns = simRuns.Where(x => 
+                //    (badYears.Contains(x.retirementDateHistoricalAnalog.Year)) == false);
+                //var badYearBankruptcies = badYearRuns.Where(x => x.wasSuccessful == false).Count();
+                //var badYearSuccesses = badYearRuns.Where(x => x.wasSuccessful == true).Count();
+                //var goodYearBankruptcies = goodYearRuns.Where(x => x.wasSuccessful == false).Count();
+                //var goodYearSuccesses = goodYearRuns.Where(x => x.wasSuccessful == true).Count();
 
-                analytics.averageLifeStyleSpendBadYears = badYearRuns.Average(x => x.totalLifeStyleSpend);
-                var successfulBadYears = badYearRuns.Where(x => x.wasSuccessful);
-                analytics.averageLifeStyleSpendSuccessfulBadYears = (successfulBadYears.Count() > 0) ?
-                    successfulBadYears.Average(y => y.totalLifeStyleSpend)
-                    : -10M;
+                //analytics.averageLifeStyleSpendBadYears = badYearRuns.Average(x => x.totalLifeStyleSpend);
+                //var successfulBadYears = badYearRuns.Where(x => x.wasSuccessful);
+                //analytics.averageLifeStyleSpendSuccessfulBadYears = (successfulBadYears.Count() > 0) ?
+                //    successfulBadYears.Average(y => y.totalLifeStyleSpend)
+                //    : -10M;
 
-                analytics.successRateBadYears = badYearSuccesses / (decimal)(badYearSuccesses + badYearBankruptcies);
-                analytics.successRateGoodYears = goodYearSuccesses / (decimal)(goodYearSuccesses + goodYearBankruptcies);
+                //analytics.successRateBadYears = badYearSuccesses / (decimal)(badYearSuccesses + badYearBankruptcies);
+                //analytics.successRateGoodYears = goodYearSuccesses / (decimal)(goodYearSuccesses + goodYearBankruptcies);
 
             }
             else
