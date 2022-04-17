@@ -17,6 +17,7 @@ namespace Lib
     public static class DataAccessLayer
     {
         private static string _dataDirectory;
+        const decimal _minSuccessRate = 0.45M;
 
 
         #region JSON functions
@@ -664,7 +665,6 @@ namespace Lib
         public static List<MonteCarloBatch> GetRunsToEvolve(int numRowsToReturn, string monteCarloVersion)
         {
             int maxSimsAlreadyRun = 1100;
-            decimal minSuccessRate = 0.85M;
             List<MonteCarloBatch> outList = new List<MonteCarloBatch>();
 
             using (var conn = PostgresDAL.getConnection())
@@ -680,8 +680,8 @@ namespace Lib
                     and p.monthlySpendCoreToday = @monthlySpendCoreToday
                     and p.monthlyInvestBrokerage = @monthlyInvestBrokerage
                     and numberofsimstorun < @maxSimsAlreadyRun
-                    and (b.analytics->'successRateOverall')::varchar(17)::numeric(4,3) >= @minSuccessRate
-                    order by (b.analytics->'medianLifeStyleSpend')::varchar(17)::numeric(14,2) * (b.analytics->'successRateOverall')::varchar(17)::numeric(4,3) desc
+                    and (b.analytics->'successRateAt90PercentileMarketValueAtAge65')::varchar(17)::numeric(4,3) >= @minSuccessRate
+                    order by (b.analytics->'medianLifeStyleSpend')::varchar(17)::numeric(14,2) * (b.analytics->'successRateAt90PercentileMarketValueAtAge65')::varchar(17)::numeric(4,3) desc
                     limit(@numRowsToReturn)
                     ;
                 ";
@@ -714,7 +714,7 @@ namespace Lib
                     {
                         ParameterName = "minSuccessRate",
                         DbType = ParamDbType.Numeric,
-                        Value = minSuccessRate
+                        Value = _minSuccessRate
                     }
                     );
                     cmd.AddParameter(new DbCommandParameter()
@@ -770,8 +770,7 @@ namespace Lib
             List<MonteCarloBatch> outList = new List<MonteCarloBatch>();
 
             int maxSimsAlreadyRun = 1100;
-            decimal minSuccessRate = 0.85M;
-
+            
             using (var conn = PostgresDAL.getConnection())
             {
                 string query = @"
@@ -805,7 +804,7 @@ namespace Lib
                     and b.montecarloversion = @monteCarloVersion
                     and p.monthlySpendCoreToday = @monthlySpendCoreToday
                     and p.monthlyInvestBrokerage = @monthlyInvestBrokerage
-                    and (b.analytics->'successRateOverall')::varchar(17)::numeric(4,3) >= @minSuccessRate
+                    and (b.analytics->'successRateAt90PercentileMarketValueAtAge65')::varchar(17)::numeric(4,3) >= @minSuccessRate
                     group by
                         p.retirementdate,
                         p.monthlySpendLifeStyleToday,
@@ -830,7 +829,7 @@ namespace Lib
                         p.annualInflationHi,
                         p.socialSecurityCollectionAge
                     having sum(b.numberofsimstorun) < @maxSimsAlreadyRun
-                    order by avg((b.analytics->'medianLifeStyleSpend')::varchar(17)::numeric * (b.analytics->'successRateOverall')::varchar(17)::numeric) desc
+                    order by avg((b.analytics->'medianLifeStyleSpend')::varchar(17)::numeric * (b.analytics->'successRateAt90PercentileMarketValueAtAge65')::varchar(17)::numeric) desc
                     limit (@numRowsToReturn)
                     ;
                 ";
@@ -863,7 +862,7 @@ namespace Lib
                     {
                         ParameterName = "minSuccessRate",
                         DbType = ParamDbType.Numeric,
-                        Value = minSuccessRate
+                        Value = _minSuccessRate
                     }
                     );
                     cmd.AddParameter(new DbCommandParameter()
@@ -928,8 +927,7 @@ namespace Lib
         }
         public static MonteCarloBatch GetSingleBestRun(string monteCarloVersion)
         {
-            int minSimsAlreadyRun = 1100;
-            decimal minSuccessRate = 0.85M;
+            int minSimsAlreadyRun = 1100;            
             int numRowsToReturn = 1;
 
             using (var conn = PostgresDAL.getConnection())
@@ -944,8 +942,8 @@ namespace Lib
                     and p.monthlySpendCoreToday = @monthlySpendCoreToday
                     and p.monthlyInvestBrokerage = @monthlyInvestBrokerage
                     and numberofsimstorun >= @minSimsAlreadyRun
-                    and (b.analytics->'successRateOverall')::varchar(17)::numeric(4,3) >= @minSuccessRate
-                    order by (b.analytics->'medianLifeStyleSpend')::varchar(17)::numeric(14,2) * (b.analytics->'successRateOverall')::varchar(17)::numeric(4,3) desc
+                    and (b.analytics->'successRateAt90PercentileMarketValueAtAge65')::varchar(17)::numeric(4,3) >= @minSuccessRate
+                    order by (b.analytics->'medianLifeStyleSpend')::varchar(17)::numeric(14,2) * (b.analytics->'successRateAt90PercentileMarketValueAtAge65')::varchar(17)::numeric(4,3) desc
                     limit(@numRowsToReturn)
                     ;
                 ";
@@ -978,7 +976,7 @@ namespace Lib
                     {
                         ParameterName = "minSuccessRate",
                         DbType = ParamDbType.Numeric,
-                        Value = minSuccessRate
+                        Value = _minSuccessRate
                     }
                     );
                     cmd.AddParameter(new DbCommandParameter()

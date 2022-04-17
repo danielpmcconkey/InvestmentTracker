@@ -21,5 +21,10 @@ namespace Lib.DataTypes.Simulation
         public List<NetWorth> netWorthSchedule { get; set; }
         public decimal totalLifeStyleSpend { get; set; }
         public DateTime retirementDateHistoricalAnalog { get; set; }
+        public decimal marketValueAtAge55 { get; set; }
+        public decimal marketValueAtAge65 { get; set; }
+        public decimal marketValueAtAge75 { get; set; }
+        public decimal marketValueAtAge85 { get; set; }
+        public decimal marketValueAtAge95 { get; set; }
     }
 }

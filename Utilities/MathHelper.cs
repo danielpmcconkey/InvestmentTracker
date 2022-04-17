@@ -39,5 +39,15 @@ namespace Utilities
             }
             return exponent;
         }
+        public static T GetMedian<T>(List<T> sortedList)
+        {
+            return GetPercentile<T>(sortedList, 0.5M);
+        }
+        public static T GetPercentile<T>(List<T> sortedList, decimal percentile)
+        {
+            int count = sortedList.Count;
+            int position = (int) Math.Round(count * percentile, 0);
+            return sortedList[position];
+        }
     }
 }

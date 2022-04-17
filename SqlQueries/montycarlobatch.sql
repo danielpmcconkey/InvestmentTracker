@@ -11,6 +11,7 @@ SELECT
 	b.numberofsimstorun,
 	--analytics
         (b.analytics->'medianLifeStyleSpend')::varchar(17)::numeric(14,2) as medianLifeStyleSpend,
+        (b.analytics->'successRateAt90PercentileMarketValueAtAge65')::varchar(17)::numeric(4,3) as successRateAt90PercentileMarketValueAtAge65,
         (b.analytics->'successRateOverall')::varchar(17)::numeric(4,3) as successRateOverall,
 --         (b.analytics->'averageLifeStyleSpendBadYears')::varchar(17)::numeric(14,2) as averageLifeStyleSpendBadYears,
 --         (b.analytics->'averageLifeStyleSpendSuccessfulBadYears')::varchar(17)::numeric(14,2) as averageLifeStyleSpendSuccessfulBadYears,
@@ -60,17 +61,18 @@ FROM investmenttracker.montecarlobatch b
 left join investmenttracker.montecarlosimparameters p on b.runid = p.runid
 cross join configvals
 where 1=1
-and b.montecarloversion = '2022.04.15.016'
+and b.montecarloversion = '2022.04.17.017'
 and p.monthlySpendCoreToday = configvals.monthlySpendCoreToday
 and p.monthlyInvestBrokerage = configvals.monthlyInvestBrokerage
 --and b.runid = '61e3fcd2-cac0-4e2b-b88c-0e483bfb67c0'
-and numberofsimstorun > 1000
--- and numberofsimstorun < 1100
+-- and numberofsimstorun > 1000
+and numberofsimstorun < 1100
 --and rundate > '2022-03-01 00:00'
 --and (b.analytics->'successRateBadYears')::varchar(17)::numeric(4,3) >= .8
 --order by ((b.analytics->'successRateBadYears')::varchar(17)::numeric) desc
 -- order by ((b.analytics->'averageLifeStyleSpendSuccessfulBadYears')::varchar(17)::numeric * (b.analytics->'successRateBadYears')::varchar(17)::numeric) desc
-order by (b.analytics->'medianLifeStyleSpend')::varchar(17)::numeric(14,2) * (b.analytics->'successRateOverall')::varchar(17)::numeric(4,3) desc
+and (b.analytics->'successRateAt90PercentileMarketValueAtAge65')::varchar(17)::numeric(4,3) >= .45
+order by (b.analytics->'medianLifeStyleSpend')::varchar(17)::numeric(14,2) * (b.analytics->'successRateAt90PercentileMarketValueAtAge65')::varchar(17)::numeric(4,3) desc
 --order by rundate desc
 limit 100
 ;

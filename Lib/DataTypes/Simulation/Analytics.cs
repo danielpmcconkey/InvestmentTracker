@@ -31,6 +31,14 @@ namespace Lib.DataTypes.Simulation
         public decimal successRateBadYears { get; set; }
         public decimal successRateGoodYears { get; set; }
         public decimal successRateOverall { get; set; }
+        public decimal medianWealthAtRetirement { get; set; }
+        public decimal percentile90WealthAtRetirement { get; set; }
+        public decimal successRateAt90PercentileWealthAtRetirement { get; set; }
+        public decimal successRateAt90PercentileMarketValueAtAge55 { get; set; }
+        public decimal successRateAt90PercentileMarketValueAtAge65 { get; set; }
+        public decimal successRateAt90PercentileMarketValueAtAge75 { get; set; }
+        public decimal successRateAt90PercentileMarketValueAtAge85 { get; set; }
+        public decimal successRateAt90PercentileMarketValueAtAge95 { get; set; }
         public Analytics()
         {
 

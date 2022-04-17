@@ -140,6 +140,15 @@ namespace Lib.Engine.MonteCarlo
             simulationRunResult.numberofrecessions = recessions.Count;
             simulationRunResult.retirementDateHistoricalAnalog = marketDataSimulator.retirementDateHistoricalAnalog;
 
+            var age55 = DateTimeHelper.RoundToMonth(birthDate.AddYears(55), RoundDateDirection.CLOSEST).DateTime;
+            simulationRunResult.marketValueAtAge55 = marketDataSimulator.getPriceAtDateEquity(age55);
+            simulationRunResult.marketValueAtAge65 = marketDataSimulator.getPriceAtDateEquity(age55.AddYears(10));
+            simulationRunResult.marketValueAtAge75 = marketDataSimulator.getPriceAtDateEquity(age55.AddYears(20));
+            simulationRunResult.marketValueAtAge85 = marketDataSimulator.getPriceAtDateEquity(age55.AddYears(30));
+            simulationRunResult.marketValueAtAge95 = marketDataSimulator.getPriceAtDateEquity(age55.AddYears(40));
+
+
+
         }
         public SimulationRunResult run()
         {

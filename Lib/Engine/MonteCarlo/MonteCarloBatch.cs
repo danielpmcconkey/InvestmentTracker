@@ -11,7 +11,7 @@ namespace Lib.Engine.MonteCarlo
     public class MonteCarloBatch
     {
         public Guid runId { get; set; }
-        public const string monteCarloVersion = "2022.04.15.016";
+        public const string monteCarloVersion = "2022.04.17.017";
         public DateTime runDate { get; set; }
         public SimulationParameters simParams { get; set; }
         public List<SimulationRunResult> simRuns { get; set; }
@@ -250,7 +250,91 @@ namespace Lib.Engine.MonteCarlo
                 analytics.averageNumberOfRecessionsInNonBankruptcyRuns = -10.0m;
                 analytics.averageWealthAtDeath = -10.0m;
             }
+
+            // wealth at retirement
             analytics.averageWealthAtRetirement = (decimal)simRuns.Average(x => x.wealthAtRetirement);
+            List<Decimal> orderedWealthAtRetirement = simRuns
+                .OrderByDescending(x => x.wealthAtRetirement)
+                .Select(w => w.wealthAtRetirement)
+                .ToList();
+
+            analytics.medianWealthAtRetirement = MathHelper.GetMedian<decimal>(orderedWealthAtRetirement);
+            analytics.percentile90WealthAtRetirement = MathHelper
+                .GetPercentile<decimal>(orderedWealthAtRetirement, 0.9M);
+
+            var runsIn90PercentileOrWorse = simRuns.Where(
+                x => x.wealthAtRetirement <= analytics.percentile90WealthAtRetirement);
+            analytics.successRateAt90PercentileWealthAtRetirement = (
+                (decimal)runsIn90PercentileOrWorse.Where(x => x.wasSuccessful).Count()
+                / (decimal)runsIn90PercentileOrWorse.Count()
+                );
+
+            // market analytics
+            List<Decimal> orderedMarketValueAtAge55 = simRuns
+                .OrderByDescending(x => x.marketValueAtAge55)
+                .Select(w => w.marketValueAtAge55)
+                .ToList();
+            decimal percentile90MarketValueAtAge55 = MathHelper
+                .GetPercentile<decimal>(orderedMarketValueAtAge55, 0.9M);
+            var runsIn90PercentileOrWorseForMarketValueAtAge55 = simRuns.Where(
+                x => x.marketValueAtAge55 <= percentile90MarketValueAtAge55);
+            analytics.successRateAt90PercentileMarketValueAtAge55 = (
+                (decimal)runsIn90PercentileOrWorseForMarketValueAtAge55.Where(x => x.wasSuccessful).Count()
+                / (decimal)runsIn90PercentileOrWorseForMarketValueAtAge55.Count()
+                );
+
+            List<Decimal> orderedMarketValueAtAge65 = simRuns
+                .OrderByDescending(x => x.marketValueAtAge65)
+                .Select(w => w.marketValueAtAge65)
+                .ToList();
+            decimal percentile90MarketValueAtAge65 = MathHelper
+                .GetPercentile<decimal>(orderedMarketValueAtAge65, 0.9M);
+            var runsIn90PercentileOrWorseForMarketValueAtAge65 = simRuns.Where(
+                x => x.marketValueAtAge65 <= percentile90MarketValueAtAge65);
+            analytics.successRateAt90PercentileMarketValueAtAge65 = (
+                (decimal)runsIn90PercentileOrWorseForMarketValueAtAge65.Where(x => x.wasSuccessful).Count()
+                / (decimal)runsIn90PercentileOrWorseForMarketValueAtAge65.Count()
+                );
+
+            List<Decimal> orderedMarketValueAtAge75 = simRuns
+                .OrderByDescending(x => x.marketValueAtAge75)
+                .Select(w => w.marketValueAtAge75)
+                .ToList();
+            decimal percentile90MarketValueAtAge75 = MathHelper
+                .GetPercentile<decimal>(orderedMarketValueAtAge75, 0.9M);
+            var runsIn90PercentileOrWorseForMarketValueAtAge75 = simRuns.Where(
+                x => x.marketValueAtAge75 <= percentile90MarketValueAtAge75);
+            analytics.successRateAt90PercentileMarketValueAtAge75 = (
+                (decimal)runsIn90PercentileOrWorseForMarketValueAtAge75.Where(x => x.wasSuccessful).Count()
+                / (decimal)runsIn90PercentileOrWorseForMarketValueAtAge75.Count()
+                );
+
+            List<Decimal> orderedMarketValueAtAge85 = simRuns
+                .OrderByDescending(x => x.marketValueAtAge85)
+                .Select(w => w.marketValueAtAge85)
+                .ToList();
+            decimal percentile90MarketValueAtAge85 = MathHelper
+                .GetPercentile<decimal>(orderedMarketValueAtAge85, 0.9M);
+            var runsIn90PercentileOrWorseForMarketValueAtAge85 = simRuns.Where(
+                x => x.marketValueAtAge85 <= percentile90MarketValueAtAge85);
+            analytics.successRateAt90PercentileMarketValueAtAge85 = (
+                (decimal)runsIn90PercentileOrWorseForMarketValueAtAge85.Where(x => x.wasSuccessful).Count()
+                / (decimal)runsIn90PercentileOrWorseForMarketValueAtAge85.Count()
+                );
+
+            List<Decimal> orderedMarketValueAtAge95 = simRuns
+                .OrderByDescending(x => x.marketValueAtAge95)
+                .Select(w => w.marketValueAtAge95)
+                .ToList();
+            decimal percentile90MarketValueAtAge95 = MathHelper
+                .GetPercentile<decimal>(orderedMarketValueAtAge95, 0.9M);
+            var runsIn90PercentileOrWorseForMarketValueAtAge95 = simRuns.Where(
+                x => x.marketValueAtAge95 <= percentile90MarketValueAtAge95);
+            analytics.successRateAt90PercentileMarketValueAtAge95 = (
+                (decimal)runsIn90PercentileOrWorseForMarketValueAtAge95.Where(x => x.wasSuccessful).Count()
+                / (decimal)runsIn90PercentileOrWorseForMarketValueAtAge95.Count()
+                );
+
         }
         private List<SimulationRunResult> getWorstNPerecentRuns(float percent, bool wasSuccessful = false)
         {
