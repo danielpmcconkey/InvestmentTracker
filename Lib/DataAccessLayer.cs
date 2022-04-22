@@ -17,7 +17,7 @@ namespace Lib
     public static class DataAccessLayer
     {
         private static string _dataDirectory;
-        const decimal _minSuccessRate = 0.45M;
+        const decimal _minSuccessRate = 0.55M;
 
 
         #region JSON functions

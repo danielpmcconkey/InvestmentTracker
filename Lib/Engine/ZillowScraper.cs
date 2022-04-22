@@ -29,7 +29,7 @@ namespace Lib.Engine
                     driver.Navigate().GoToUrl(url);
                     IWebElement values = driver.FindElement(By.Id("home-details-home-values"));
 
-                    var allH3s = values.FindElements(By.XPath("//h3[contains(@class, \"Text-c11n-8-62-5__sc-aiai24-0\")]"));
+                    var allH3s = values.FindElements(By.XPath("//h3[contains(@class, \"Text-c11n-8-63-0__sc-aiai24-0\")]"));
                     string zestimate = allH3s[0].Text;
 
                     decimal mortgageBalance = ConfigManager.GetDecimal("PrimaryResidenceMortgageBalance");
