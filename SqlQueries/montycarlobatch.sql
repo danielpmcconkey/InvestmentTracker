@@ -65,8 +65,8 @@ and b.montecarloversion = '2022.04.17.017'
 and p.monthlySpendCoreToday = configvals.monthlySpendCoreToday
 and p.monthlyInvestBrokerage = configvals.monthlyInvestBrokerage
 --and b.runid = '61e3fcd2-cac0-4e2b-b88c-0e483bfb67c0'
--- and numberofsimstorun > 1000
-and numberofsimstorun < 1100
+and numberofsimstorun > 1000
+--and numberofsimstorun < 1100
 --and rundate > '2022-03-01 00:00'
 --and (b.analytics->'successRateBadYears')::varchar(17)::numeric(4,3) >= .8
 --order by ((b.analytics->'successRateBadYears')::varchar(17)::numeric) desc

@@ -91,9 +91,13 @@ namespace InvestmentTrackerCLI
                     graphDataStocks2.xType = graphDataStocksAll.xType;
                     graphDataStocks2.yType = graphDataStocksAll.yType;
                     graphDataStocks2.series = new List<GraphSeries>();
+                    // find the median and put the top half all together
+                    decimal medianVal = GetMedianYValueFromGraphSeriesList<decimal>(graphDataStocksAll.series);
                     for (int i = 0; i < graphDataStocksAll.series.Count; i++)
                     {
-                        if(i % 2 == 0) graphDataStocks1.AddSeries(graphDataStocksAll.series[i]);
+                        decimal currentValue = 
+                            GetCurrentYValueFromGraphSeries<decimal>(graphDataStocksAll.series[i]);
+                        if(currentValue >= medianVal) graphDataStocks1.AddSeries(graphDataStocksAll.series[i]);
                         else graphDataStocks2.AddSeries(graphDataStocksAll.series[i]);
                     }
                     LineChartPrefs stocklLineChartPrefs = GetDefaultLineChartPrefs();
@@ -329,8 +333,21 @@ namespace InvestmentTrackerCLI
                 gridLineStrokeWidthInPx = 0.5,
             };
         }
-        
-        
+        private static T GetCurrentYValueFromGraphSeries<T>(GraphSeries s)
+        {
+            var latestEntry = s.data.OrderByDescending(rows => rows.x).FirstOrDefault();
+            return (T)latestEntry.y;
+        }
+        private static T GetMedianYValueFromGraphSeriesList<T>(List<GraphSeries> l)
+        {
+            List<T> yValueList = new List<T>();
+            foreach (GraphSeries s in l)
+            {
+                yValueList.Add(GetCurrentYValueFromGraphSeries<T>(s));
+            }
+
+            return MathHelper.GetMedian<T>(yValueList.OrderBy(x => x).ToList());
+        }
 
     }
 }
