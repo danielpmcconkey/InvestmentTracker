@@ -797,7 +797,9 @@ namespace Lib
                         p.maxSpendingPercentWhenBelowRetirementLevelEquity,
                         p.annualInflationLow,
                         p.annualInflationHi,
-                        p.socialSecurityCollectionAge
+                        p.socialSecurityCollectionAge,
+                        p.beansAndWeeniesThreshold,
+                        p.beansAndWeeniesCoreSpendMultiplier
                     FROM investmenttracker.montecarlobatch b
                     left join investmenttracker.montecarlosimparameters p on b.runid = p.runid
                     where 1=1
@@ -827,7 +829,9 @@ namespace Lib
                         p.maxSpendingPercentWhenBelowRetirementLevelEquity,
                         p.annualInflationLow,
                         p.annualInflationHi,
-                        p.socialSecurityCollectionAge
+                        p.socialSecurityCollectionAge,
+                        p.beansAndWeeniesThreshold,
+                        p.beansAndWeeniesCoreSpendMultiplier
                     having sum(b.numberofsimstorun) < @maxSimsAlreadyRun
                     order by avg((b.analytics->'medianLifeStyleSpend')::varchar(17)::numeric * (b.analytics->'successRateAt90PercentileMarketValueAtAge65')::varchar(17)::numeric) desc
                     limit (@numRowsToReturn)
@@ -897,7 +901,8 @@ namespace Lib
                                 livingLargeThreashold = PostgresDAL.getDecimal(reader, "livingLargeThreashold"),
                                 livingLargeLifestyleSpendMultiplier = PostgresDAL.getDecimal(reader, "livingLargeLifestyleSpendMultiplier"),
                                 maxSpendingPercentWhenBelowRetirementLevelEquity = PostgresDAL.getDecimal(reader, "maxSpendingPercentWhenBelowRetirementLevelEquity"),
-                                
+                                beansAndWeeniesThreshold=PostgresDAL.getDecimal(reader, "beansAndWeeniesThreshold"),
+                                beansAndWeeniesCoreSpendMultiplier = PostgresDAL.getDecimal(reader, "beansAndWeeniesCoreSpendMultiplier"),
                             };
                             // overwrite the non-randomized values with config values                            
                             batch.simParams.startDate = DateTime.Now.Date;
@@ -1221,7 +1226,8 @@ namespace Lib
                             deathageoverride, recessionlifestyleadjustment, retirementlifestyleadjustment, 
                             maxspendingpercentwhenbelowretirementlevelequity, annualinflationlow, 
                             annualinflationhi, socialsecuritycollectionage, livinglargethreashold,
-                            livinglargelifestylespendmultiplier)
+                            livinglargelifestylespendmultiplier, beansAndWeeniesThreshold, 
+                            beansAndWeeniesCoreSpendMultiplier)
                     VALUES (
                         @runId, 
                         @startDate, 
@@ -1249,7 +1255,9 @@ namespace Lib
                         @annualInflationHi,
                         @socialSecurityCollectionAge,
                         @livingLargeThreashold,
-                        @livingLargeLifestyleSpendMultiplier
+                        @livingLargeLifestyleSpendMultiplier, 
+                        @beansAndWeeniesThreshold, 
+                        @beansAndWeeniesCoreSpendMultiplier
                         );
 
                         ";
@@ -1283,6 +1291,8 @@ namespace Lib
                     cmd.AddParameter(new DbCommandParameter { ParameterName = "socialSecurityCollectionAge", DbType = ParamDbType.Numeric, Value = simParams.socialSecurityCollectionAge });
                     cmd.AddParameter(new DbCommandParameter { ParameterName = "livingLargeThreashold", DbType = ParamDbType.Numeric, Value = simParams.livingLargeThreashold });
                     cmd.AddParameter(new DbCommandParameter { ParameterName = "livingLargeLifestyleSpendMultiplier", DbType = ParamDbType.Numeric, Value = simParams.livingLargeLifestyleSpendMultiplier });
+                    cmd.AddParameter(new DbCommandParameter { ParameterName = "beansAndWeeniesThreshold", DbType = ParamDbType.Numeric, Value = simParams.beansAndWeeniesThreshold });
+                    cmd.AddParameter(new DbCommandParameter { ParameterName = "beansAndWeeniesCoreSpendMultiplier", DbType = ParamDbType.Numeric, Value = simParams.beansAndWeeniesCoreSpendMultiplier });
                     try
                     {
                         int numRowsAffected = PostgresDAL.executeNonQuery(cmd.npgsqlCommand);

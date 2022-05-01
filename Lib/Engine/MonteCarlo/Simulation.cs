@@ -57,6 +57,8 @@ namespace Lib.Engine.MonteCarlo
         private long _totalLifeStyleSpend;
         private decimal _livingLargeThreashold;  // if your total equities are greater that retirement level * this value, start living large
         private decimal _livingLargeLifestyleSpendMultiplier;
+        private long beansAndWeeniesThreshold;
+        private decimal beansAndWeeniesCoreSpendMultiplier;
         #endregion sim values
 
 
@@ -72,18 +74,18 @@ namespace Lib.Engine.MonteCarlo
         {
             totalCashOnHand = 0;
             _totalLifeStyleSpend = 0;
-            monthlyNetSocialSecurityIncome = convertFloatAmountToSafeCalcInt(simParams.monthlyNetSocialSecurityIncome);
-            monthlySpendCoreToday = convertFloatAmountToSafeCalcInt(simParams.monthlySpendCoreToday);
-            monthlySpendLifeStyleToday = convertFloatAmountToSafeCalcInt(simParams.monthlySpendLifeStyleToday);
-            monthlyInvestRoth401k = convertFloatAmountToSafeCalcInt(simParams.monthlyInvestRoth401k);
-            monthlyInvestTraditional401k = convertFloatAmountToSafeCalcInt(simParams.monthlyInvestTraditional401k);
-            monthlyInvestBrokerage = convertFloatAmountToSafeCalcInt(simParams.monthlyInvestBrokerage);
-            monthlyInvestHSA = convertFloatAmountToSafeCalcInt(simParams.monthlyInvestHSA);
-            annualRSUInvestmentPreTax = convertFloatAmountToSafeCalcInt(simParams.annualRSUInvestmentPreTax);
+            monthlyNetSocialSecurityIncome = convertDecimalAmountToSafeCalcInt(simParams.monthlyNetSocialSecurityIncome);
+            monthlySpendCoreToday = convertDecimalAmountToSafeCalcInt(simParams.monthlySpendCoreToday);
+            monthlySpendLifeStyleToday = convertDecimalAmountToSafeCalcInt(simParams.monthlySpendLifeStyleToday);
+            monthlyInvestRoth401k = convertDecimalAmountToSafeCalcInt(simParams.monthlyInvestRoth401k);
+            monthlyInvestTraditional401k = convertDecimalAmountToSafeCalcInt(simParams.monthlyInvestTraditional401k);
+            monthlyInvestBrokerage = convertDecimalAmountToSafeCalcInt(simParams.monthlyInvestBrokerage);
+            monthlyInvestHSA = convertDecimalAmountToSafeCalcInt(simParams.monthlyInvestHSA);
+            annualRSUInvestmentPreTax = convertDecimalAmountToSafeCalcInt(simParams.annualRSUInvestmentPreTax);
             xMinusAgeStockPercentPreRetirement = simParams.xMinusAgeStockPercentPreRetirement;
             numYearsCashBucketInRetirement = simParams.numYearsCashBucketInRetirement;
             numYearsBondBucketInRetirement = simParams.numYearsBondBucketInRetirement;
-            monthlyGrossIncomePreRetirement = convertFloatAmountToSafeCalcInt(simParams.monthlyGrossIncomePreRetirement);
+            monthlyGrossIncomePreRetirement = convertDecimalAmountToSafeCalcInt(simParams.monthlyGrossIncomePreRetirement);
             birthDate = simParams.birthDate;
             rmdDate = birthDate.AddYears(72);
             startDate = simParams.startDate;
@@ -97,6 +99,8 @@ namespace Lib.Engine.MonteCarlo
             _socialSecurityCollectionAge = simParams.socialSecurityCollectionAge;
             _livingLargeLifestyleSpendMultiplier = simParams.livingLargeLifestyleSpendMultiplier;
             _livingLargeThreashold = simParams.livingLargeThreashold;
+            beansAndWeeniesThreshold = convertDecimalAmountToSafeCalcInt(simParams.beansAndWeeniesThreshold);
+            beansAndWeeniesCoreSpendMultiplier = simParams.beansAndWeeniesCoreSpendMultiplier;
 
             // set retirement date to the first day of the next month
             retirementDate = simParams.retirementDate;
@@ -232,7 +236,7 @@ namespace Lib.Engine.MonteCarlo
                         rebalanceBuckets();
                         calculateNetWorth();
 
-                        simulationRunResult.wealthAtRetirement = convertLongAmountToReadableFloat(
+                        simulationRunResult.wealthAtRetirement = convertLongAmountToReadableDecimal(
                             simulationRunResult.netWorthSchedule
                             .OrderByDescending(x => x.dateWithinSim).First().totalNetWorth);
                     }
@@ -247,9 +251,6 @@ namespace Lib.Engine.MonteCarlo
                     // first day of every year
                     if (simulationRunDate.Month == 1 && simulationRunDate.Day == 1)
                     {
-                        // add inflation
-                        decimal annualInflationPercent = RNG.getRandomDecimalWeighted(annualInflationLow, annualInflationHi);
-                        updateSpendForInflation(annualInflationPercent);
                         // pay taxes
                         payTaxes();
                         // rebalance buckets
@@ -265,6 +266,11 @@ namespace Lib.Engine.MonteCarlo
                     {
                         if (!_isBankrupt)
                         {
+                            // add inflation
+                            decimal monthlyInflationGrowth = marketDataSimulator
+                                .getMovementAtDateInflation(simulationRunDate);
+                            updateSpendForInflation(monthlyInflationGrowth);
+
                             // get paid (Social Security)
                             if (((decimal)(simulationRunDate - birthDate).TotalDays / 365.25M) >= _socialSecurityCollectionAge)
                             {
@@ -290,11 +296,11 @@ namespace Lib.Engine.MonteCarlo
             {
                 simulationRunResult.wasSuccessful = true;
                 simulationRunResult.bankruptcydate = null;
-                simulationRunResult.wealthAtDeath = convertLongAmountToReadableFloat(simulationRunResult.netWorthSchedule
+                simulationRunResult.wealthAtDeath = convertLongAmountToReadableDecimal(simulationRunResult.netWorthSchedule
                     .OrderByDescending(x => x.dateWithinSim).First().totalNetWorth);
             }
 
-            simulationRunResult.totalLifeStyleSpend = convertLongAmountToReadableFloat(_totalLifeStyleSpend);
+            simulationRunResult.totalLifeStyleSpend = convertLongAmountToReadableDecimal(_totalLifeStyleSpend);
 
 
 
@@ -599,38 +605,44 @@ namespace Lib.Engine.MonteCarlo
             
             long thisMonthsBills = monthlySpendCoreToday;
             long actualLifestyleSpend = monthlySpendLifeStyleToday;
+            long totalEquity = assets.Where(x => x.investmentIndex == InvestmentIndex.EQUITY).Sum(y => y.amountCurrent);
 
-            
+
+
             // check if in a recession and ball just a little less hard
             if (marketDataSimulator.isInRecession(simulationRunDate))
             {
-
                 actualLifestyleSpend = Convert.ToInt64(Math.Round(
                     actualLifestyleSpend * recessionLifestyleAdjustment));
             }
-            else
+            // if equity has gone below retirement level, spend less
+            if (totalEquity < equityBalanceAtRetirement)
             {
-                // if equity has gone below retirement level, spend less
-                long totalEquity = assets.Where(x => x.investmentIndex == InvestmentIndex.EQUITY).Sum(y => y.amountCurrent);
-                if (totalEquity < equityBalanceAtRetirement)
-                {
-                    actualLifestyleSpend = Convert.ToInt64(Math.Round(
-                        actualLifestyleSpend * maxSpendingPercentWhenBelowRetirementLevelEquity));
-                }
-                // if equity has dropped below 1/2 of retirement level, reduce to core
-                if (totalEquity < (long)Math.Round(equityBalanceAtRetirement / 2M, 0))
-                {
-                    actualLifestyleSpend = 0;
-                }
-                // if equity has risen above N times retirement level, engage livin' large mode
-                if (totalEquity >= (long)Math.Round(equityBalanceAtRetirement * _livingLargeThreashold, 0))
-                {
-                    actualLifestyleSpend = Convert.ToInt64(Math.Round(
-                         actualLifestyleSpend * _livingLargeLifestyleSpendMultiplier));
-                }
+                long maxAllowableSpend = Convert.ToInt64(Math.Round(
+                    monthlySpendLifeStyleToday * maxSpendingPercentWhenBelowRetirementLevelEquity));
+                if (actualLifestyleSpend > maxAllowableSpend)
+                    actualLifestyleSpend = maxAllowableSpend;
             }
-            
-            
+            // if equity has dropped below 1/2 of retirement level, reduce to core
+            if (totalEquity < (long)Math.Round(equityBalanceAtRetirement / 2M, 0))
+            {
+                actualLifestyleSpend = 0;
+            }
+            // if equity has risen above N times retirement level, engage livin' large mode
+            if (totalEquity >= (long)Math.Round(equityBalanceAtRetirement * _livingLargeThreashold, 0))
+            {
+                actualLifestyleSpend = Convert.ToInt64(Math.Round(
+                     actualLifestyleSpend * _livingLargeLifestyleSpendMultiplier));
+            }
+            // if equity has dropped below beans and weenies threshold, reduce core spend
+            if (totalEquity < beansAndWeeniesThreshold)
+            {
+                actualLifestyleSpend = 0;
+                thisMonthsBills = (long) Math.Round(thisMonthsBills * beansAndWeeniesCoreSpendMultiplier, 0);
+            }
+
+
+
             payWithCash(thisMonthsBills + actualLifestyleSpend);
             _totalLifeStyleSpend += actualLifestyleSpend;
         }
@@ -1022,14 +1034,14 @@ namespace Lib.Engine.MonteCarlo
         #region utility functions
 
         
-        public long convertFloatAmountToSafeCalcInt(decimal inVal)
+        public long convertDecimalAmountToSafeCalcInt(decimal inVal)
         {
             const long safeCalcCurrencyConversion = 10000;
             decimal calcVal = inVal * safeCalcCurrencyConversion;
             long outVal = Convert.ToInt64(Math.Round(calcVal, 0));
             return outVal;
         }
-        public decimal convertLongAmountToReadableFloat(long inVal)
+        public decimal convertLongAmountToReadableDecimal(long inVal)
         {
             const decimal safeCalcCurrencyConversion = 10000m;
             decimal calcVal = inVal / safeCalcCurrencyConversion;

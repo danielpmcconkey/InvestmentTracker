@@ -233,14 +233,29 @@ namespace Lib.Engine.MonteCarlo
                 simParams.maxSpendingPercentWhenBelowRetirementLevelEquity = RNG.getRandomDecimal(0.0M, 1.0M);
                 simParams.livingLargeThreashold = RNG.getRandomDecimal(1.2M, 5.0M);
                 simParams.livingLargeLifestyleSpendMultiplier = RNG.getRandomDecimal(1.2M, 5.0M);
+                simParams.beansAndWeeniesThreshold = RNG.getRandomDecimal(500000M, 2000000M);
+                simParams.beansAndWeeniesCoreSpendMultiplier = RNG.getRandomDecimal(0.5M, 1.0M);
 
-                
+
                 List<Asset> assetsGoingIn = DataAccessLayer.ReadSimAssetsFromDb();
 
                 int numberOfSimsToRun = ConfigManager.GetInt("numberOfSimsToRun");
                 MonteCarloBatch mc = new MonteCarloBatch(simParams, assetsGoingIn, numberOfSimsToRun);
                 mc.runBatch();
             }
+        }
+        public static void RunMonteCarloBatchAtConfigSettings()
+        {           
+            CheckClucth();
+
+            // pull from default configs
+            var simParams = GetSimulationParametersFromConfig();
+                
+            List<Asset> assetsGoingIn = DataAccessLayer.ReadSimAssetsFromDb();
+
+            int numberOfSimsToRun = ConfigManager.GetInt("numberOfSimsToRun");
+            MonteCarloBatch mc = new MonteCarloBatch(simParams, assetsGoingIn, numberOfSimsToRun);
+            mc.runBatch();            
         }
         public static void UpdateAnalytics()
         {
@@ -358,6 +373,20 @@ namespace Lib.Engine.MonteCarlo
                 b.simParams.livingLargeLifestyleSpendMultiplier,
                 1.25M,
                 5.0M,
+                out hasChangedIndividual
+                );
+            if (hasChangedIndividual) hasChanged = true;
+            b.simParams.beansAndWeeniesCoreSpendMultiplier = EvolveDecimalParameter(
+                b.simParams.beansAndWeeniesCoreSpendMultiplier,
+                0.5M,
+                1.0M,
+                out hasChangedIndividual
+                );
+            if (hasChangedIndividual) hasChanged = true;
+            b.simParams.beansAndWeeniesThreshold = EvolveDecimalParameter(
+                b.simParams.beansAndWeeniesThreshold,
+                500000M,
+                2000000M,
                 out hasChangedIndividual
                 );
             if (hasChangedIndividual) hasChanged = true;
@@ -483,8 +512,11 @@ namespace Lib.Engine.MonteCarlo
             var socialSecurityCollectionAge = ConfigManager.GetDecimal("socialSecurityCollectionAge");
             var livingLargeThreashold = ConfigManager.GetDecimal("livingLargeThreashold");
             var livingLargeLifestyleSpendMultiplier = ConfigManager.GetDecimal("livingLargeLifestyleSpendMultiplier");
+            var beansAndWeeniesThreshold = ConfigManager.GetDecimal("beansAndWeeniesThreshold");
+            var beansAndWeeniesCoreSpendMultiplier = ConfigManager.GetDecimal("beansAndWeeniesCoreSpendMultiplier");
 
-            
+
+
 
             SimulationParameters simParams = new SimulationParameters()
             {
@@ -514,6 +546,8 @@ namespace Lib.Engine.MonteCarlo
                 socialSecurityCollectionAge = socialSecurityCollectionAge,
                 livingLargeThreashold = livingLargeThreashold,
                 livingLargeLifestyleSpendMultiplier = livingLargeLifestyleSpendMultiplier,
+                beansAndWeeniesThreshold = beansAndWeeniesThreshold,
+                beansAndWeeniesCoreSpendMultiplier = beansAndWeeniesCoreSpendMultiplier,
             };
 
             return simParams;

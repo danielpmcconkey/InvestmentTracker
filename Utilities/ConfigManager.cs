@@ -34,6 +34,38 @@ namespace Utilities
             string secretsJson = JsonSerializer.Serialize(secretsDict);
             Environment.SetEnvironmentVariable(_secretsEnvVarName, secretsJson, EnvironmentVariableTarget.User);
         }
+        public static void WriteDbConfigValue(string name, string value)
+        {
+            string query = "update " + _cache["dbConfigTable"] + " set value = @value where name = @name;";
+            using (var conn = PostgresDAL.getConnection())
+            {
+                PostgresDAL.openConnection(conn);
+
+                using (var cmd = new DbCommand(query, conn))
+                {
+                    cmd.AddParameter(new DbCommandParameter()
+                    {
+                        DbType = ParamDbType.Varchar,
+                        ParameterName = "name",
+                        Value = name
+                    }
+                    );
+                    cmd.AddParameter(new DbCommandParameter()
+                    {
+                        DbType = ParamDbType.Varchar,
+                        ParameterName = "value",
+                        Value = value
+                    }
+                    );
+
+                    int numRowsAffected = PostgresDAL.executeNonQuery(cmd.npgsqlCommand);
+                    if (numRowsAffected != 1)
+                    {
+                        throw new Exception(string.Format("ConfigManager.WriteDbConfigValue data insert returned {0} rows. Expected 1.", numRowsAffected));
+                    }
+                }                
+            }
+        }
 
         private static void ReadAllConfig()
         {

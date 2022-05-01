@@ -34,6 +34,8 @@ namespace Lib.DataTypes.Simulation
         public decimal socialSecurityCollectionAge { get; set; }
         public decimal livingLargeThreashold { get; set; } // if your total equities are greater that retirement level * this value, start living large
         public decimal livingLargeLifestyleSpendMultiplier { get; set; }
+        public decimal beansAndWeeniesThreshold { get; set; }
+        public decimal beansAndWeeniesCoreSpendMultiplier { get; set; }
 
 
     }

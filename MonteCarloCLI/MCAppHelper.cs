@@ -34,6 +34,15 @@ namespace MonteCarloCLI
         }
         internal static void Run()
         {
+            /*
+             * when it's time to update the Monte Carlo Version, first run UpdateConfig()
+             * to copy the current best run to the config settings in the DB. Then change 
+             * the version number. Then run RunMonteCarloBatchAtConfigSettings() to run one 
+             * version of the simulation at new rules with prior best parameters
+             * 
+             */
+            // UpdateConfig();
+            // MonteCarloHelper.RunMonteCarloBatchAtConfigSettings();
             try
             {
                 while (true)
@@ -63,6 +72,7 @@ namespace MonteCarloCLI
                 Logger.info("Exiting Monte Carlo CLI");
             }
         }
+        
         static void printAssemblyInfo()
         {
             Assembly assem = Assembly.GetExecutingAssembly();
@@ -71,6 +81,44 @@ namespace MonteCarloCLI
             FileVersionInfo fvi = FileVersionInfo.GetVersionInfo(assem.Location);
             Logger.info($"{assemName.Name}, Version {fvi.ProductMajorPart}.{fvi.ProductMinorPart}.{fvi.ProductBuildPart}.{fvi.ProductPrivatePart}");
             Logger.info($"Build number: {assemblyBuild}");
+        }
+        internal static void UpdateConfig()
+        {
+            var mc = DataAccessLayer.GetSingleBestRun(MonteCarloBatch.monteCarloVersion);
+
+            ConfigManager.WriteDbConfigValue("monthlySpendLifeStyleToday",
+                mc.simParams.monthlySpendLifeStyleToday.ToString());
+
+            ConfigManager.WriteDbConfigValue("xMinusAgeStockPercentPreRetirement",
+                mc.simParams.xMinusAgeStockPercentPreRetirement.ToString());
+
+            ConfigManager.WriteDbConfigValue("numYearsBondBucketInRetirement",
+                mc.simParams.numYearsBondBucketInRetirement.ToString());
+
+            ConfigManager.WriteDbConfigValue("numYearsCashBucketInRetirement",
+                mc.simParams.numYearsCashBucketInRetirement.ToString());
+
+            ConfigManager.WriteDbConfigValue("recessionRecoveryPercent",
+                mc.simParams.recessionRecoveryPercent.ToString());
+
+            ConfigManager.WriteDbConfigValue("shouldMoveEquitySurplussToFillBondGapAlways",
+                mc.simParams.shouldMoveEquitySurplussToFillBondGapAlways.ToString());
+
+            ConfigManager.WriteDbConfigValue("recessionLifestyleAdjustment",
+                mc.simParams.recessionLifestyleAdjustment.ToString());
+
+            ConfigManager.WriteDbConfigValue("retirementLifestyleAdjustment",
+                mc.simParams.retirementLifestyleAdjustment.ToString());
+
+            ConfigManager.WriteDbConfigValue("maxSpendingPercentWhenBelowRetirementLevelEquity",
+                mc.simParams.maxSpendingPercentWhenBelowRetirementLevelEquity.ToString());
+
+            ConfigManager.WriteDbConfigValue("livingLargeThreashold",
+                mc.simParams.livingLargeThreashold.ToString());
+
+            ConfigManager.WriteDbConfigValue("livingLargeLifestyleSpendMultiplier",
+                mc.simParams.livingLargeLifestyleSpendMultiplier.ToString());
+
         }
     }
 }
