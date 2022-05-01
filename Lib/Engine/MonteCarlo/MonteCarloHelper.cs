@@ -233,7 +233,7 @@ namespace Lib.Engine.MonteCarlo
                 simParams.maxSpendingPercentWhenBelowRetirementLevelEquity = RNG.getRandomDecimal(0.0M, 1.0M);
                 simParams.livingLargeThreashold = RNG.getRandomDecimal(1.2M, 5.0M);
                 simParams.livingLargeLifestyleSpendMultiplier = RNG.getRandomDecimal(1.2M, 5.0M);
-                simParams.beansAndWeeniesThreshold = RNG.getRandomDecimal(500000M, 2000000M);
+                simParams.beansAndWeeniesThreshold = RNG.getRandomDecimal(50M, 200M) * 10000;   // getRandomDecimal chokes on big numbers
                 simParams.beansAndWeeniesCoreSpendMultiplier = RNG.getRandomDecimal(0.5M, 1.0M);
 
 
