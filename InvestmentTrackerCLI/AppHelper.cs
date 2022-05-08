@@ -265,9 +265,9 @@ namespace InvestmentTrackerCLI
                 .OrderBy(z => z.year)
                 .ThenBy(w => w.month)
                 .ToList();
-            
+
             // pull categories
-            List<string> categories = DataAccessLayer.ReadBudgetCategoriesFromDb();
+            List<(string, string)> categories = DataAccessLayer.ReadBudgetCategoriesFromDb();
 
             // create output table data
             List<(string monthLabel, decimal income, decimal outgo, 
@@ -286,11 +286,11 @@ namespace InvestmentTrackerCLI
                 decimal income = expensesThisMonth.Where(x => x.category == "Deposits").Sum(y => y.amount);
                 decimal outgo = expensesThisMonth.Where(x => x.category != "Deposits").Sum(y => y.amount);
                 Dictionary<string, decimal> catExpenses = new Dictionary<string, decimal>();
-                foreach (string category in categories)
+                foreach ((string, string) category in categories)
                 {
                     decimal catExpense = expensesThisMonth
-                        .Where(x => x.category == category).Sum(y => y.amount);
-                    catExpenses.Add(category, catExpense);
+                        .Where(x => x.category == category.Item1).Sum(y => y.amount);
+                    catExpenses.Add(category.Item1, catExpense);
                 }
                 ouptputTableVals.Add((monthLabel, income, outgo, catExpenses));
             }
@@ -322,19 +322,19 @@ namespace InvestmentTrackerCLI
             sb.AppendLine("<table class=\"budgettable\">");
             sb.AppendLine("<tr>");
             sb.AppendLine("<th>Month</th>");
-            foreach(string category in categories)
+            foreach ((string, string) category in categories)
             {
-                sb.AppendLine(string.Format("<th>{0}</th>", category));
+                sb.AppendLine(string.Format("<th>{0}</th>", category.Item2));
             }
             sb.AppendLine("</tr>");
             foreach (var row in ouptputTableVals)
             {
                 sb.AppendLine("<tr>");
                 sb.AppendLine(string.Format("<td>{0}</td>", row.monthLabel));
-                foreach (string category in categories)
+                foreach ((string, string) category in categories)
                 {
                     sb.AppendLine(string.Format("<td class=\"numval\">{0}</td>", 
-                        row.catExpenses[category].ToString("#,##0.00")));
+                        row.catExpenses[category.Item1].ToString("#,##0.00")));
                 }
                 sb.AppendLine("</tr>");
             }

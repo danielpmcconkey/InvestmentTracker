@@ -1364,14 +1364,14 @@ namespace Lib
 
             return outList;
         }
-        public static List<string> ReadBudgetCategoriesFromDb()
+        public static List<(string, string)> ReadBudgetCategoriesFromDb()
         {
-            List<string> outList = new List<string>();
+            List<(string, string)> outList = new List<(string, string)>();
             using (var conn = PostgresDAL.getConnection())
             {
                 string query = @"
 			        SELECT 
-				        name
+				        name, displayname
 			        FROM investmenttracker.budgetcategory
 			        order by name
 					;";
@@ -1382,7 +1382,10 @@ namespace Lib
                     {
                         while (reader.Read())
                         {
-                            outList.Add(PostgresDAL.getString(reader, "name"));
+                            outList.Add((
+                                PostgresDAL.getString(reader, "name"),
+                                PostgresDAL.getString(reader, "displayname")
+                                ));
                         }
                     }
                 }
