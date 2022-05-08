@@ -56,9 +56,10 @@ namespace InvestmentTrackerCLI
                 InvestmentVehiclesList.investmentVehicles = DataAccessLayer.ReadInvestmentVehiclesFromDb();
                 List<Account> accounts = DataAccessLayer.ReadAccountsFromDb();
                 List<Valuation> prices = DataAccessLayer.ReadValuationsFromDb();
+                List<BudgetExpense> budgetExpenses = DataAccessLayer.ReadBudgetExpensesFromDb(
+                    DateTime.Parse("2021-11-01"), DateTime.Now);
 
-
-
+                string budgetExpensesCharts = printBudgetExpenses(budgetExpenses);
                 // create a pricing engine for use in further operations                 
                 PricingEngine.AddValuations(prices);
                 
@@ -144,6 +145,8 @@ namespace InvestmentTrackerCLI
                     sbOutput.AppendLine(svgAllPublicComparison.MakeXML());
                     sbOutput.AppendLine("<p class='caption'>This chart shows your net worth in all publicly-traded investments versus what it would look like if you'd just put everything into the SPY S&P 500 ETF instead.</p>");
                     sbOutput.AppendLine("</div>");
+
+                    sbOutput.AppendLine(budgetExpensesCharts);
                     
                     //Logger.info(Environment.NewLine + svg.xml + Environment.NewLine);
                     Logger.info("Finished printing net worth");
@@ -250,6 +253,98 @@ namespace InvestmentTrackerCLI
                 Logger.info("Exiting Investment Tracker CLI");
             }
         }
+
+        private static string printBudgetExpenses(List<BudgetExpense> budgetExpenses)
+        {
+            StringBuilder sb = new StringBuilder();
+
+            // create months to group on
+            var months = budgetExpenses
+                .GroupBy(x => new { x.transactionDate.Month, x.transactionDate.Year })
+                .Select(y => new { month = y.Key.Month, year = y.Key.Year })
+                .OrderBy(z => z.year)
+                .ThenBy(w => w.month)
+                .ToList();
+            
+            // pull categories
+            List<string> categories = DataAccessLayer.ReadBudgetCategoriesFromDb();
+
+            // create output table data
+            List<(string monthLabel, decimal income, decimal outgo, 
+                Dictionary<string, decimal> catExpenses)>
+                ouptputTableVals = new List<(string monthLabel, decimal income, decimal outgo, 
+                Dictionary<string, decimal> catExpenses)>();
+
+            foreach (var month in months)
+            {
+                int yearNum = month.year;
+                int monthNum = month.month;
+                string monthLabel = string.Format("{0}-{1}", yearNum, monthNum.ToString("0#"));
+                var expensesThisMonth = budgetExpenses
+                    .Where(x => x.transactionDate.Year == yearNum && x.transactionDate.Month == monthNum);
+
+                decimal income = expensesThisMonth.Where(x => x.category == "Deposits").Sum(y => y.amount);
+                decimal outgo = expensesThisMonth.Where(x => x.category != "Deposits").Sum(y => y.amount);
+                Dictionary<string, decimal> catExpenses = new Dictionary<string, decimal>();
+                foreach (string category in categories)
+                {
+                    decimal catExpense = expensesThisMonth
+                        .Where(x => x.category == category).Sum(y => y.amount);
+                    catExpenses.Add(category, catExpense);
+                }
+                ouptputTableVals.Add((monthLabel, income, outgo, catExpenses));
+            }
+
+            // create output string
+            sb.AppendLine("<h1>Budget values</h1>");
+            // income v outgo
+            sb.AppendLine("<h3>Income versus outgo</h3>");
+            sb.AppendLine("<table class=\"budgettable\">");
+            sb.AppendLine("<tr>");
+            sb.AppendLine("<th>Month</th>");
+            sb.AppendLine("<th>Income</th>");
+            sb.AppendLine("<th>Outgo</th>");
+            sb.AppendLine("<th>Surplus</th>");
+            sb.AppendLine("</tr>");
+            foreach (var row in ouptputTableVals)
+            {
+                sb.AppendLine("<tr>");
+                sb.AppendLine(string.Format("<td>{0}</td>", row.monthLabel));
+                sb.AppendLine(string.Format("<td class=\"numval\">{0}</td>", row.income.ToString("#,##0.00")));
+                sb.AppendLine(string.Format("<td class=\"numval\">{0}</td>", row.outgo.ToString("#,##0.00")));
+                sb.AppendLine(string.Format("<td class=\"numval\">{0}</td>", (row.income + row.outgo).ToString("#,##0.00")));
+                sb.AppendLine("</tr>");
+            }
+            sb.AppendLine("</table>");
+
+            // category spend
+            sb.AppendLine("<h3>Spend by category by month</h3>");
+            sb.AppendLine("<table class=\"budgettable\">");
+            sb.AppendLine("<tr>");
+            sb.AppendLine("<th>Month</th>");
+            foreach(string category in categories)
+            {
+                sb.AppendLine(string.Format("<th>{0}</th>", category));
+            }
+            sb.AppendLine("</tr>");
+            foreach (var row in ouptputTableVals)
+            {
+                sb.AppendLine("<tr>");
+                sb.AppendLine(string.Format("<td>{0}</td>", row.monthLabel));
+                foreach (string category in categories)
+                {
+                    sb.AppendLine(string.Format("<td class=\"numval\">{0}</td>", 
+                        row.catExpenses[category].ToString("#,##0.00")));
+                }
+                sb.AppendLine("</tr>");
+            }
+            sb.AppendLine("</table>");
+
+
+
+            return sb.ToString();
+        }
+
         static void printAssemblyInfo()
         {
             Assembly assem = Assembly.GetExecutingAssembly();
@@ -284,7 +379,26 @@ namespace InvestmentTrackerCLI
             HTML.AppendLine("}");
             HTML.AppendLine(".mcanalytics h3 {");
             HTML.AppendLine("font-size:21px;");
-            HTML.AppendLine(String.Format("color: #{0};", _colorTextBrightest));            
+            HTML.AppendLine(String.Format("color: #{0};", _colorTextBrightest));
+            HTML.AppendLine("}");
+            HTML.AppendLine(".budgettable {");
+            HTML.AppendLine("font-size:21px;");
+            HTML.AppendLine(String.Format(" width: {0}px;", captionWidth));
+            HTML.AppendLine("}");
+            HTML.AppendLine(".budgettable th{");
+            HTML.AppendLine("padding:5px 10px 2px 10px;");
+            HTML.AppendLine("margin:0px;");
+            HTML.AppendLine("font-size:12px;");
+            HTML.AppendLine("font-weight:bold");
+            HTML.AppendLine("}");
+            HTML.AppendLine(".budgettable td{");
+            HTML.AppendLine("padding:5px 10px 2px 10px;");
+            HTML.AppendLine("margin:0px;");
+            HTML.AppendLine("font-size:12px;");
+            HTML.AppendLine("border: solid 1px");
+            HTML.AppendLine("}");
+            HTML.AppendLine(".budgettable .numval{");
+            HTML.AppendLine("text-align:right");
             HTML.AppendLine("}");
 
             HTML.AppendLine(@"        </style>

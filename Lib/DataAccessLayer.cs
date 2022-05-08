@@ -17,7 +17,7 @@ namespace Lib
     public static class DataAccessLayer
     {
         private static string _dataDirectory;
-        const decimal _minSuccessRate = 0.55M;
+        const decimal _minSuccessRate = 0.85M;
 
 
         #region JSON functions
@@ -1311,5 +1311,85 @@ namespace Lib
 
         }
         #endregion montecarlo Functions
+
+        #region budget
+        public static List<BudgetExpense> ReadBudgetExpensesFromDb(DateTime minDateInclusive, DateTime maxDateExclusive)
+        {
+            List<BudgetExpense> outList = new List<BudgetExpense>();
+            using (var conn = PostgresDAL.getConnection())
+            {
+                string query = @"
+			        SELECT 
+				        id, 
+				        expenseaccount, 
+				        transactiondate, 
+				        description, 
+				        category, 
+				        amount
+			        FROM investmenttracker.budgetexpense
+			        where transactiondate >= @minDateInclusive
+			        and transactionDate < @maxDateExclusive;
+					;";
+                PostgresDAL.openConnection(conn);
+                using (DbCommand cmd = new DbCommand(query, conn))
+                {
+                    cmd.AddParameter(new DbCommandParameter()
+                    {
+                        ParameterName = "minDateInclusive",
+                        DbType = ParamDbType.Timestamp,
+                        Value = minDateInclusive
+                    });
+                    cmd.AddParameter(new DbCommandParameter()
+                    {
+                        ParameterName = "maxDateExclusive",
+                        DbType = ParamDbType.Timestamp,
+                        Value = maxDateExclusive
+                    });
+                    using (var reader = PostgresDAL.executeReader(cmd.npgsqlCommand))
+                    {
+                        while (reader.Read())
+                        {
+                            BudgetExpense t = new BudgetExpense();
+                            t.id = PostgresDAL.getInt(reader, "id");
+                            t.expenseAccount = PostgresDAL.getString(reader, "expenseaccount");
+                            t.transactionDate = PostgresDAL.getDateTime(reader, "transactiondate", DateTimeKind.Local);
+                            t.description = PostgresDAL.getString(reader, "description");
+                            t.category = PostgresDAL.getString(reader, "category");
+                            t.amount = PostgresDAL.getDecimal(reader, "amount");
+                            outList.Add(t);
+                        }
+                    }
+                }
+            }
+
+            return outList;
+        }
+        public static List<string> ReadBudgetCategoriesFromDb()
+        {
+            List<string> outList = new List<string>();
+            using (var conn = PostgresDAL.getConnection())
+            {
+                string query = @"
+			        SELECT 
+				        name
+			        FROM investmenttracker.budgetcategory
+			        order by name
+					;";
+                PostgresDAL.openConnection(conn);
+                using (DbCommand cmd = new DbCommand(query, conn))
+                {                    
+                    using (var reader = PostgresDAL.executeReader(cmd.npgsqlCommand))
+                    {
+                        while (reader.Read())
+                        {
+                            outList.Add(PostgresDAL.getString(reader, "name"));
+                        }
+                    }
+                }
+            }
+
+            return outList;
+        }
+        #endregion budget
     }
 }
